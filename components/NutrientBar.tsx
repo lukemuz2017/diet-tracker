@@ -5,7 +5,7 @@ import { formatTarget, type Target } from "@/lib/targets";
 
 // design.md: Nutrient bar. The track shows the target as a band with tick
 // marks at its edges. The fill is red until the value is in range, then green
-// (red again past a limit); the chip and the line under it say it in words.
+// (red again past a limit); the chip and the lines under it say it in words.
 
 function scaleMax(target: Target): number {
   if (target.kind === "range") return target.max! * 1.25;
@@ -19,15 +19,13 @@ export function NutrientBar({
   nutrient,
   target,
   value,
-  known,
-  foods,
+  detail,
 }: {
   nutrient: NutrientKey;
   target: Target;
   value: number | undefined;
-  /** Foods with a value for this nutrient, out of `foods`. */
-  known: number;
-  foods: number;
+  /** A second line, e.g. "In range on 4 of 5 days". */
+  detail?: string;
 }) {
   const { label, unit } = NUTRIENTS[nutrient];
   const status = statusFor(nutrient, target, value);
@@ -57,8 +55,13 @@ export function NutrientBar({
         {target.kind !== "min" && <div className="absolute inset-y-0 w-0.5 bg-soil" style={{ left: pct(bandEnd, max) }} />}
       </div>
       <p className="text-[13px] text-muted">
-        {value === undefined ? "No values yet" : `${formatValue(value)} ${unit}`} of {formatTarget(nutrient, target)}
-        {value !== undefined && known < foods && ` · based on ${known} of ${foods} foods`}
+        {value === undefined ? "No values yet" : `${formatValue(value)} ${unit} a day`} · target {formatTarget(nutrient, target)}
+        {detail && (
+          <>
+            <br />
+            {detail}
+          </>
+        )}
       </p>
     </div>
   );

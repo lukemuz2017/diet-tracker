@@ -8,7 +8,8 @@ import { Card, PageHeader } from "@/components/ui/Card";
 import { TextField } from "@/components/ui/Field";
 import { addFood } from "@/lib/actions";
 import { formatDay } from "@/lib/dates";
-import { CATEGORY_ORDER, FOODS, categoryOf, type Food } from "@/lib/foods";
+import { formatAmount, quantityFor } from "@/lib/amounts";
+import { CATEGORY_ORDER, FOODS, amountFor, categoryOf, type Food } from "@/lib/foods";
 import { recentFoods } from "@/lib/log";
 import type { Nutrients } from "@/lib/nutrients";
 import { useSavedData } from "@/lib/storage";
@@ -43,13 +44,14 @@ function AddFood({ today, entries }: { today: string; entries: Parameters<typeof
       : undefined;
   const isToday = date === today;
 
-  function add(food: { name: string; foodId?: string; perServing: Nutrients }, servings: number) {
+  function add(food: { name: string; foodId?: string; perServing: Nutrients }, multiple: number) {
     if (dateError) {
       document.getElementById("log-date")?.focus();
       return;
     }
-    const name = food.name.toLowerCase();
-    addFood(food, servings, date, isToday ? `Added ${name}` : `Added ${name} to ${formatDay(date)}`);
+    const spec = amountFor(food.foodId);
+    const what = `${formatAmount(spec, quantityFor(spec, multiple))} of ${food.name.toLowerCase()}`;
+    addFood(food, multiple, date, isToday ? `Added ${what}` : `Added ${what} to ${formatDay(date)}`);
     if (isToday) router.push("/today");
   }
 
@@ -57,7 +59,7 @@ function AddFood({ today, entries }: { today: string; entries: Parameters<typeof
   const matches = (name: string) => name.toLowerCase().includes(search);
   const recent = recentFoods(entries).filter((food) => matches(food.name));
   const common = FOODS.filter((food) => matches(food.name));
-  const lastServings = (food: Food) =>
+  const lastMultiple = (food: Food) =>
     recentFoods(entries, 100).find((item) => item.foodId === food.id)?.lastServings ?? 1;
 
   return (
@@ -94,9 +96,10 @@ function AddFood({ today, entries }: { today: string; entries: Parameters<typeof
               <FoodRow
                 key={food.key}
                 name={food.name}
-                perServing={food.perServing}
-                defaultServings={food.lastServings}
-                onAdd={(servings) => add(food, servings)}
+                spec={amountFor(food.foodId)}
+                perBase={food.perServing}
+                defaultMultiple={food.lastServings}
+                onAdd={(multiple) => add(food, multiple)}
               />
             ))}
           </ul>
@@ -114,10 +117,10 @@ function AddFood({ today, entries }: { today: string; entries: Parameters<typeof
                 <FoodRow
                   key={food.id}
                   name={food.name}
-                  serving={food.serving}
-                  perServing={food.nutrients}
-                  defaultServings={lastServings(food)}
-                  onAdd={(servings) => add({ name: food.name, foodId: food.id, perServing: food.nutrients }, servings)}
+                  spec={amountFor(food.id)}
+                  perBase={food.nutrients}
+                  defaultMultiple={lastMultiple(food)}
+                  onAdd={(multiple) => add({ name: food.name, foodId: food.id, perServing: food.nutrients }, multiple)}
                 />
               ))}
             </ul>
@@ -136,7 +139,7 @@ function AddFood({ today, entries }: { today: string; entries: Parameters<typeof
       <Card id="custom" className="scroll-mt-6">
         <h2 className="pb-1 font-display text-xl font-extrabold">Add your own food</h2>
         <p className="pb-4 text-[15px] text-muted">
-          Use the numbers for what you ate. Only the name and calories are required.
+          Enter the numbers for one portion of what you ate. Only the name and calories are required.
         </p>
         <CustomFoodForm
           date={date}

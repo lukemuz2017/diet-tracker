@@ -1,34 +1,37 @@
 "use client";
 
-import { NutrientBar } from "@/components/NutrientBar";
-import { SERVING_CHOICES } from "@/components/FoodRow";
+import Link from "next/link";
+import { AmountSelect } from "@/components/FoodRow";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, Eyebrow, PageHeader } from "@/components/ui/Card";
 import { StickerButton, type StickerTone } from "@/components/ui/Sticker";
 import { CheckIcon } from "@/components/ui/icons";
 import { addFood, changeServings, removeEntry, setDayComplete } from "@/lib/actions";
-import { formatDay } from "@/lib/dates";
-import { quickPicks } from "@/lib/foods";
+import { formatAmount, multipleFor, quantityFor } from "@/lib/amounts";
+import { addDays, formatDay, weekdayName } from "@/lib/dates";
+import { amountFor, quickPicks } from "@/lib/foods";
 import { formatValue, totalsFor } from "@/lib/log";
-import type { NutrientKey } from "@/lib/nutrients";
+import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { useSavedData, type Entry } from "@/lib/storage";
-import { computeTargets } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
 
-const DAILY_BARS: NutrientKey[] = ["protein", "carbs", "fat", "fiber", "sodium"];
-const WEEKLY_BARS: NutrientKey[] = ["potassium", "calcium", "iron", "vitaminA", "vitaminC"];
 const PICK_TONES: StickerTone[] = ["lemon", "lemon", "paper", "leaf", "kraft", "paper"];
 
+// Today shows plain totals, with no targets: one day out of range (a dinner
+// out, an event) doesn't matter. Ranges and judgments live on Last 7 days and
+// History, because the 7-day average is what counts.
 export function TodayView() {
   const data = useSavedData();
   const today = useToday();
   if (!data?.profile || !today) return <PageHeader title="Today" />;
 
-  const targets = computeTargets(data.profile, today);
   const entries = data.entries.filter((entry) => entry.date === today);
   const { totals, known, foods } = totalsFor(entries);
   const complete = data.completeDays.includes(today);
   const firstFood = data.entries.length === 1 && entries.length === 1 && !complete;
+  const yesterday = addDays(today, -1);
+  const missedYesterday =
+    data.entries.some((entry) => entry.date < yesterday) && !data.entries.some((entry) => entry.date === yesterday);
 
   return (
     <>
@@ -38,6 +41,15 @@ export function TodayView() {
           Add food
         </ButtonLink>
       </div>
+
+      {missedYesterday && (
+        <p className="mb-5 max-w-3xl rounded-2xl bg-lemon-tint px-4 py-3 text-[15px]">
+          You didn’t log {weekdayName(yesterday)}.{" "}
+          <Link href={`/log?date=${yesterday}`} className="font-bold text-leaf underline underline-offset-[3px]">
+            Add it now
+          </Link>
+        </p>
+      )}
 
       {firstFood && (
         <p role="status" className="mb-5 max-w-3xl rounded-2xl bg-leaf-tint px-4 py-3 text-[15px]">
@@ -50,42 +62,39 @@ export function TodayView() {
         <EmptyToday today={today} />
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-2">
-          <div className="flex flex-col gap-5">
-            <Card className="flex flex-col gap-4">
-              <p className="flex items-baseline gap-2">
-                <span className="font-display text-[40px] font-extrabold leading-none">
-                  {formatValue(totals.calories ?? 0)}
-                </span>
-                <span className="text-lg">kcal so far</span>
-              </p>
-              <NutrientBar nutrient="calories" target={targets.calories} value={totals.calories} known={known.calories} foods={foods} />
-            </Card>
-
-            <Card className="flex flex-col gap-5">
-              <h2 className="font-display text-xl font-extrabold">Today so far</h2>
-              {DAILY_BARS.map((key) => (
-                <NutrientBar key={key} nutrient={key} target={targets[key]} value={totals[key]} known={known[key]} foods={foods} />
-              ))}
-            </Card>
-
-            <Card>
-              <details className="group">
-                <summary className="flex min-h-11 cursor-pointer items-center justify-between font-display text-xl font-extrabold">
-                  Vitamins and minerals
-                  <span className="font-sans text-sm font-bold text-leaf group-open:hidden">Show</span>
-                  <span className="hidden font-sans text-sm font-bold text-leaf group-open:inline">Hide</span>
-                </summary>
-                <p className="pb-4 pt-1 text-sm text-muted">
-                  These vary a lot from day to day, so your 7-day average matters more than today.
-                </p>
-                <div className="flex flex-col gap-5">
-                  {WEEKLY_BARS.map((key) => (
-                    <NutrientBar key={key} nutrient={key} target={targets[key]} value={totals[key]} known={known[key]} foods={foods} />
+          <Card className="flex flex-col gap-4">
+            <p className="flex items-baseline gap-2">
+              <span className="font-display text-[40px] font-extrabold leading-none">{formatValue(totals.calories ?? 0)}</span>
+              <span className="text-lg">kcal so far</span>
+            </p>
+            <table className="w-full text-[15px]">
+              <caption className="sr-only">Today’s totals</caption>
+              <thead className="sr-only">
+                <tr>
+                  <th scope="col">Nutrient</th>
+                  <th scope="col">Today</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {NUTRIENT_GROUPS.flatMap((group) => group.keys)
+                  .filter((key) => key !== "calories")
+                  .map((key) => (
+                    <tr key={key}>
+                      <th scope="row" className="py-2 pr-3 text-left font-bold">{NUTRIENTS[key].label}</th>
+                      <td className="py-2 text-right tabular-nums">
+                        {totals[key] === undefined ? "–" : `${formatValue(totals[key]!)} ${NUTRIENTS[key].unit}`}
+                        {totals[key] !== undefined && known[key] < foods && (
+                          <span className="block text-xs text-muted">from {known[key]} of {foods} foods</span>
+                        )}
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </details>
-            </Card>
-          </div>
+              </tbody>
+            </table>
+            <Link href="/week" className="self-start text-sm font-bold text-leaf underline underline-offset-[3px]">
+              See how your week is balancing out
+            </Link>
+          </Card>
 
           <div className="flex flex-col gap-5">
             <FoodList entries={entries} />
@@ -101,7 +110,7 @@ function EmptyToday({ today }: { today: string }) {
   return (
     <Card className="flex max-w-xl flex-col gap-3">
       <h2 className="font-display text-[26px] font-extrabold leading-tight">What did you eat today?</h2>
-      <p className="text-[15px] text-muted">Tap a food to log one serving.</p>
+      <p className="text-[15px] text-muted">Tap a food to log it.</p>
       <div className="flex flex-wrap gap-2.5 py-1">
         {quickPicks().map((food, index) => (
           <StickerButton
@@ -109,7 +118,7 @@ function EmptyToday({ today }: { today: string }) {
             tone={PICK_TONES[index]}
             index={index}
             onClick={() =>
-              addFood({ name: food.name, foodId: food.id, perServing: food.nutrients }, 1, today, `Added ${food.name.toLowerCase()}`)
+              addFood({ name: food.name, foodId: food.id, perServing: food.nutrients }, 1, today, `Added ${formatAmount(amountFor(food.id), amountFor(food.id).base)} of ${food.name.toLowerCase()}`)
             }
           >
             + {food.name.split(",")[0]}
@@ -130,9 +139,7 @@ function FoodList({ entries }: { entries: Entry[] }) {
       <h2 className="font-display text-xl font-extrabold">Today’s foods</h2>
       <ul className="divide-y divide-line">
         {ordered.map((entry) => {
-          const choices = SERVING_CHOICES.includes(entry.servings)
-            ? SERVING_CHOICES
-            : [...SERVING_CHOICES, entry.servings].sort((a, b) => a - b);
+          const spec = amountFor(entry.foodId);
           return (
             <li key={entry.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
               <span className="min-w-0">
@@ -142,21 +149,13 @@ function FoodList({ entries }: { entries: Entry[] }) {
                 )}
               </span>
               <span className="flex items-center gap-2">
-                <label htmlFor={`servings-${entry.id}`} className="sr-only">
-                  Servings of {entry.name}
-                </label>
-                <select
-                  id={`servings-${entry.id}`}
-                  value={entry.servings}
-                  onChange={(event) => changeServings(entry.id, Number(event.target.value))}
-                  className="h-11 rounded-field border-[1.5px] border-field bg-white px-2 text-[15px]"
-                >
-                  {choices.map((choice) => (
-                    <option key={choice} value={choice}>
-                      {choice} {choice === 1 ? "serving" : "servings"}
-                    </option>
-                  ))}
-                </select>
+                <AmountSelect
+                  id={`amount-${entry.id}`}
+                  label={`Amount of ${entry.name}`}
+                  spec={spec}
+                  quantity={quantityFor(spec, entry.servings)}
+                  onChange={(quantity) => changeServings(entry.id, multipleFor(spec, quantity))}
+                />
                 <Button variant="quiet" onClick={() => removeEntry(entry.id)} aria-label={`Remove ${entry.name}`}>
                   Remove
                 </Button>

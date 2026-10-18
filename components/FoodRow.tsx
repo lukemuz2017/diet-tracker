@@ -3,44 +3,75 @@
 import { useId, useState } from "react";
 import { Sticker, type StickerTone } from "@/components/ui/Sticker";
 import { PlusIcon } from "@/components/ui/icons";
+import { choicesWith, formatAmount, multipleFor, quantityFor, type AmountSpec } from "@/lib/amounts";
 import { formatValue, goodSourceTags } from "@/lib/log";
 import type { Nutrients } from "@/lib/nutrients";
 
-export const SERVING_CHOICES = [0.5, 1, 1.5, 2, 3];
-
 const TAG_TONES: StickerTone[] = ["lemon", "leaf", "kraft"];
 
-/** One food you can add: name, serving, kcal, "what it adds" tags, amount and Add. */
+/** An amount picker in the food's own unit ("2 eggs", "½ cup", "3 oz"). */
+export function AmountSelect({
+  id,
+  label,
+  spec,
+  quantity,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  spec: AmountSpec;
+  quantity: number;
+  onChange: (quantity: number) => void;
+}) {
+  return (
+    <>
+      <label htmlFor={id} className="sr-only">
+        {label}
+      </label>
+      <select
+        id={id}
+        value={quantity}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="h-11 rounded-field border-[1.5px] border-field bg-white px-2 text-[15px]"
+      >
+        {choicesWith(spec, quantity).map((choice) => (
+          <option key={choice} value={choice}>
+            {formatAmount(spec, choice)}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+}
+
+/** One food you can add: name, amount, kcal for that amount, "what it adds" tags, and Add. */
 export function FoodRow({
   name,
-  serving,
-  perServing,
-  defaultServings = 1,
+  spec,
+  perBase,
+  defaultMultiple = 1,
   onAdd,
 }: {
   name: string;
-  serving?: string;
-  perServing: Nutrients;
-  defaultServings?: number;
-  onAdd: (servings: number) => void;
+  spec: AmountSpec;
+  /** Values for the base amount. */
+  perBase: Nutrients;
+  defaultMultiple?: number;
+  onAdd: (multiple: number) => void;
 }) {
-  const [servings, setServings] = useState(defaultServings);
+  const [quantity, setQuantity] = useState(quantityFor(spec, defaultMultiple));
   const selectId = useId();
-  const tags = goodSourceTags(perServing);
-  const choices = SERVING_CHOICES.includes(defaultServings)
-    ? SERVING_CHOICES
-    : [...SERVING_CHOICES, defaultServings].sort((a, b) => a - b);
+  const tags = goodSourceTags(perBase);
+  const calories = perBase.calories !== undefined ? perBase.calories * multipleFor(spec, quantity) : undefined;
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
       <div className="flex min-w-0 flex-col gap-1.5">
         <span className="font-bold">
           {name}
-          <span className="font-normal text-muted">
-            {serving && ` · ${serving}`}
-            {perServing.calories !== undefined && ` · ${formatValue(perServing.calories)} kcal`}
-          </span>
+          {calories !== undefined && <span className="font-normal text-muted"> · {formatValue(calories)} kcal</span>}
         </span>
+        {spec.note && <span className="text-[13px] text-muted">{spec.note}</span>}
         {tags.length > 0 && (
           <span className="flex flex-wrap gap-1.5">
             <span className="sr-only">Good source of {tags.join(", ")}</span>
@@ -53,25 +84,11 @@ export function FoodRow({
         )}
       </div>
       <div className="flex items-center gap-2">
-        <label htmlFor={selectId} className="sr-only">
-          Servings of {name}
-        </label>
-        <select
-          id={selectId}
-          value={servings}
-          onChange={(event) => setServings(Number(event.target.value))}
-          className="h-11 rounded-field border-[1.5px] border-field bg-white px-2 text-[15px]"
-        >
-          {choices.map((choice) => (
-            <option key={choice} value={choice}>
-              {choice} {choice === 1 ? "serving" : "servings"}
-            </option>
-          ))}
-        </select>
+        <AmountSelect id={selectId} label={`Amount of ${name}`} spec={spec} quantity={quantity} onChange={setQuantity} />
         <button
           type="button"
-          onClick={() => onAdd(servings)}
-          aria-label={`Add ${name}`}
+          onClick={() => onAdd(multipleFor(spec, quantity))}
+          aria-label={`Add ${formatAmount(spec, quantity)} of ${name}`}
           className="inline-flex min-h-11 items-center gap-1 rounded-full bg-leaf px-4 font-display text-[15px] font-extrabold text-white hover:bg-leaf-dark"
         >
           <PlusIcon width={18} height={18} strokeWidth={2.25} />

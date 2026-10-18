@@ -8,6 +8,7 @@ const links = [
   { href: "/today", label: "Today" },
   { href: "/log", label: "Log" },
   { href: "/week", label: "Last 7 days" },
+  { href: "/history", label: "History" },
   { href: "/targets", label: "Targets" },
 ] as const;
 
@@ -31,7 +32,7 @@ export function SiteNav() {
               <Link
                 href={href}
                 aria-current={current ? "page" : undefined}
-                className={`inline-flex min-h-11 items-center rounded-full px-3 text-sm font-bold sm:px-4 sm:text-[15px] ${
+                className={`inline-flex min-h-11 items-center rounded-full px-2.5 text-[13px] font-bold sm:px-4 sm:text-[15px] ${
                   current ? "bg-leaf text-white" : "text-soil hover:bg-track"
                 }`}
               >
