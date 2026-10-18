@@ -25,23 +25,42 @@ const STATE_LABEL: Record<DayState, string> = {
   "in-progress": "in progress",
 };
 
-/** The 7 days ending on `end`: which days count, averages against targets, and half-logged days to fix. */
-export function WindowView({ data, profile, end, today }: { data: SavedData; profile: Profile; end: string; today: string }) {
+/**
+ * The 7 days ending on `end`: which days count, averages against targets, and
+ * half-logged days to fix. `compact` drops the cards and heading, for use
+ * inside the Food log's collapsible panel.
+ */
+export function WindowView({
+  data,
+  profile,
+  end,
+  today,
+  compact = false,
+}: {
+  data: SavedData;
+  profile: Profile;
+  end: string;
+  today: string;
+  compact?: boolean;
+}) {
   const targets = computeTargets(profile, today);
   const summary = summarizeWindow(data, end, today, maintenanceCalories(profile, today), targets);
   const incomplete = summary.days.filter((day) => day.state === "incomplete");
+  const Box = compact ? "section" : Card;
 
   return (
-    <div className="flex max-w-3xl flex-col gap-5">
-      <Card className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display text-xl font-extrabold">
-            {formatDay(summary.start)} – {formatDay(summary.end)}
-          </h2>
-          <span className="text-[15px] text-muted">
-            {summary.logged} of 7 days logged · {summary.counted} complete
-          </span>
-        </div>
+    <div className={compact ? "flex flex-col gap-5" : "flex max-w-3xl flex-col gap-5"}>
+      <Box className="flex flex-col gap-4">
+        {!compact && (
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-display text-xl font-extrabold">
+              {formatDay(summary.start)} – {formatDay(summary.end)}
+            </h2>
+            <span className="text-[15px] text-muted">
+              {summary.logged} of 7 days logged · {summary.counted} complete
+            </span>
+          </div>
+        )}
         <ol className="grid grid-cols-7 gap-1.5 text-center text-xs text-muted">
           {summary.days.map((day) => (
             <li key={day.date} className="flex flex-col items-center gap-1">
@@ -54,7 +73,7 @@ export function WindowView({ data, profile, end, today }: { data: SavedData; pro
           ))}
         </ol>
         <p className="text-xs text-muted">Filled: complete · Yellow: looks incomplete · Ring: not logged · Dashed: in progress</p>
-      </Card>
+      </Box>
 
       {incomplete.map((day) => (
         <div key={day.date} className="flex flex-col gap-2 rounded-2xl bg-lemon-tint px-4 py-3 text-[15px]">
@@ -74,16 +93,17 @@ export function WindowView({ data, profile, end, today }: { data: SavedData; pro
       ))}
 
       {summary.counted === 0 ? (
-        <Card>
+        <Box>
           <p className="text-[15px]">
             {end === today
-              ? "Your 7-day balance starts when you finish your first day. Mark today complete on the Today page, or come back tomorrow."
+              ? "Your 7-day balance starts when you finish your first day. Use Mark day complete at the top, or come back tomorrow."
               : "No complete days in this week."}
           </p>
-        </Card>
+        </Box>
       ) : (
-        NUTRIENT_GROUPS.map((group) => (
-          <Card key={group.title} className="flex flex-col gap-5">
+        <div className={compact ? "grid gap-x-8 gap-y-6 lg:grid-cols-2" : "flex flex-col gap-5"}>
+        {NUTRIENT_GROUPS.map((group) => (
+          <Box key={group.title} className="flex flex-col gap-5">
             <h2 className="font-display text-xl font-extrabold">{group.title}</h2>
             {group.keys.map((key) => {
               const { days, inRange } = summary.coverage[key];
@@ -97,8 +117,9 @@ export function WindowView({ data, profile, end, today }: { data: SavedData; pro
                 />
               );
             })}
-          </Card>
-        ))
+          </Box>
+        ))}
+        </div>
       )}
 
       {summary.counted > 0 && summary.counted < 3 && (

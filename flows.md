@@ -43,15 +43,15 @@ flowchart LR
 
 ## Routes
 
-Shared navigation, shown once setup is done: **Food log · Last 7 days · History · Targets**, with the current page marked.
+Shared navigation, shown once setup is done: **Food log · History · Targets**, with the current page marked.
 
 | Route | What it's for |
 |---|---|
 | `/` | Welcome card when nothing is saved; goes to the Food log once you're set up |
 | `/setup` | Your details: units, height, weight, date of birth, sex (female, male, non-binary), activity level. Reused, prefilled, to edit them later |
 | `/targets` | Your ranges, each with an ⓘ explanation of how it was calculated |
-| `/log` | **Food log.** Pick today or any of the 6 days before. Left: that day's totals (no targets) and foods, with amount and Remove, and Mark day complete. Right: add food (search with suggestions, your recipes, recent, browse common foods, add your own) |
-| `/week` | **Last 7 days:** day strip, each nutrient's 7-day average as a bar against its target, days in range, and half-logged days to fix |
+| `/log` | **Food log.** Pick today or any of the 6 days before; a Mark day complete toggle sits beside the picker. A collapsible **Your 7 days** panel shows the 7 days ending on the picked day: a one-line summary closed; the day strip, half-logged days to fix and each nutrient's 7-day average as a bar against its target when open. Left: that day's totals (no targets) and foods. Right: one Add food button that opens a search with a Foods / Meals & recipes toggle |
+| `/week` | Old address; forwards to `/log` (Last 7 days is the Your 7 days panel now) |
 | `/history` | Pick any day to see the same view for the 7 days ending on it |
 | `/recipes` | Paste a recipe (reads its per-serving nutrition panel) or build one from ingredients; saved recipes are logged by the serving |
 | `/today` | Old address; forwards to `/log` |

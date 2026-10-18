@@ -124,7 +124,7 @@ export function AddFoodPanel({ data, date, today }: { data: SavedData; date: str
         className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
       >
         <PlusIcon width={20} height={20} strokeWidth={2.25} className={`transition-transform ${open ? "rotate-45" : ""}`} />
-        {open ? "Close" : `Add food to ${dayLabel}`}
+        {open ? "Cancel" : `Add food to ${dayLabel}`}
       </button>
 
       <div id={panelId} hidden={!open} className="flex flex-col gap-4">

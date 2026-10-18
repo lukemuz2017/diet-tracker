@@ -6,7 +6,6 @@ import { useSavedData } from "@/lib/storage";
 
 const links = [
   { href: "/log", label: "Food log" },
-  { href: "/week", label: "Last 7 days" },
   { href: "/history", label: "History" },
   { href: "/targets", label: "Targets" },
 ] as const;

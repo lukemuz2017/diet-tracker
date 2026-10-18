@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { AddFoodPanel } from "@/components/AddFood";
 import { AmountSelect } from "@/components/FoodRow";
+import { WeekPanel } from "@/components/WeekPanel";
 import { Button } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
 import { StickerButton, type StickerTone } from "@/components/ui/Sticker";
@@ -23,8 +24,8 @@ const PICK_TONES: StickerTone[] = ["lemon", "lemon", "paper", "leaf", "kraft", "
 
 // The Food log: pick a day (today or up to 6 days back), see its totals and
 // foods on the left, and add food to it on the right. Totals have no
-// targets: one day out of range (a dinner out, an event) doesn't matter;
-// Last 7 days and History judge the 7-day average.
+// targets: one day out of range (a dinner out, an event) doesn't matter.
+// The collapsible "Your 7 days" panel judges the 7 days ending on that day.
 export function FoodLog() {
   const data = useSavedData();
   const today = useToday();
@@ -70,6 +71,8 @@ export function FoodLog() {
         </fieldset>
         <CompleteToggle data={data} date={date} today={today} />
       </div>
+
+      <WeekPanel data={data} profile={data.profile} end={date} today={today} />
 
       {missedYesterday && (
         <p className="mb-5 max-w-3xl rounded-2xl bg-lemon-tint px-4 py-3 text-[15px]">

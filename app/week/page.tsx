@@ -1,14 +1,6 @@
-import type { Metadata } from "next";
-import { RequireProfile } from "@/components/Gates";
-import { LastSevenDays } from "@/components/WeekView";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Last 7 days" };
-
+// Last 7 days now lives in the Food log's "Your 7 days" panel.
 export default function WeekPage() {
-  return (
-    <>
-      <RequireProfile />
-      <LastSevenDays />
-    </>
-  );
+  redirect("/log");
 }

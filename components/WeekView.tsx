@@ -10,25 +10,6 @@ import { useToday } from "@/lib/useToday";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Last 7 days: the window ending today. */
-export function LastSevenDays() {
-  const data = useSavedData();
-  const today = useToday();
-  const header = (
-    <PageHeader
-      title="Last 7 days"
-      description="Each nutrient’s daily average over the last 7 days. One day out of range is normal; the average is what counts."
-    />
-  );
-  if (!data?.profile || !today) return header;
-  return (
-    <>
-      {header}
-      <WindowView data={data} profile={data.profile} end={today} today={today} />
-    </>
-  );
-}
-
 /** History: the 7-day window ending on any earlier day. */
 export function History() {
   const data = useSavedData();
