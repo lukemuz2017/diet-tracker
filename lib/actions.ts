@@ -2,6 +2,7 @@
 
 import { scaleNutrients, withServings } from "./log.ts";
 import type { Nutrients } from "./nutrients.ts";
+import type { Recipe } from "./recipe.ts";
 import { updateData, type Entry } from "./storage.ts";
 import { showToast } from "./toast.ts";
 
@@ -56,4 +57,22 @@ export function setDayComplete(date: string, complete: boolean) {
       ? [...new Set([...data.completeDays, date])]
       : data.completeDays.filter((day) => day !== date),
   }));
+}
+
+export function saveRecipe(recipe: Omit<Recipe, "id" | "createdAt">): Recipe {
+  const saved: Recipe = { ...recipe, id: newId(), createdAt: new Date().toISOString() };
+  updateData((data) => ({ ...data, recipes: [...data.recipes, saved] }));
+  return saved;
+}
+
+export function deleteRecipe(id: string) {
+  let removed: Recipe | undefined;
+  updateData((data) => {
+    removed = data.recipes.find((recipe) => recipe.id === id);
+    return { ...data, recipes: data.recipes.filter((recipe) => recipe.id !== id) };
+  });
+  if (removed) {
+    const recipe = removed;
+    showToast(`Deleted ${recipe.name}`, () => updateData((data) => ({ ...data, recipes: [...data.recipes, recipe] })));
+  }
 }

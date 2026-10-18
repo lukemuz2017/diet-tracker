@@ -17,12 +17,12 @@ export function RequireProfile() {
   return null;
 }
 
-/** On the welcome screen: sends someone who has set up to Today. */
+/** On the welcome screen: sends someone who has set up to the Food log. */
 export function RedirectIfSetUp() {
   const data = useSavedData();
   const router = useRouter();
   useEffect(() => {
-    if (data?.profile) router.replace("/today");
+    if (data?.profile) router.replace("/log");
   }, [data, router]);
   return null;
 }

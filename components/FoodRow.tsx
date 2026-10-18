@@ -50,6 +50,7 @@ export function FoodRow({
   spec,
   perBase,
   defaultMultiple = 1,
+  actionLabel = "Add",
   onAdd,
 }: {
   name: string;
@@ -57,6 +58,8 @@ export function FoodRow({
   /** Values for the base amount. */
   perBase: Nutrients;
   defaultMultiple?: number;
+  /** Button text; the default is "Add". */
+  actionLabel?: string;
   onAdd: (multiple: number) => void;
 }) {
   const [quantity, setQuantity] = useState(quantityFor(spec, defaultMultiple));
@@ -88,11 +91,11 @@ export function FoodRow({
         <button
           type="button"
           onClick={() => onAdd(multipleFor(spec, quantity))}
-          aria-label={`Add ${formatAmount(spec, quantity)} of ${name}`}
+          aria-label={`${actionLabel} ${formatAmount(spec, quantity)} of ${name}`}
           className="inline-flex min-h-11 items-center gap-1 rounded-full bg-leaf px-4 font-display text-[15px] font-extrabold text-white hover:bg-leaf-dark"
         >
           <PlusIcon width={18} height={18} strokeWidth={2.25} />
-          Add
+          {actionLabel}
         </button>
       </div>
     </li>

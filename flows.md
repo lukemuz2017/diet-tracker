@@ -43,16 +43,18 @@ flowchart LR
 
 ## Routes
 
-Shared navigation, shown once setup is done: **Today · Log · Last 7 days · Targets**, with the current page marked.
+Shared navigation, shown once setup is done: **Food log · Last 7 days · History · Targets**, with the current page marked.
 
 | Route | What it's for |
 |---|---|
-| `/` | Welcome when nothing is saved; goes to `/today` once you're set up |
-| `/setup` | Your details: units, height, weight, age, sex, activity level, with a "why we ask" hint on sensitive fields. Reused, prefilled, to edit them later |
-| `/targets` | Your ranges, each with an ⓘ button that explains the range and how it was calculated from your details. Links to edit your details and to load sample data |
-| `/today` | Today's bars (grams and what's left), the day's entries with edit and delete, "Mark day complete", and nudges |
-| `/log` | Add food: common, recent or custom. One tap adds a serving; the date defaults to today, so you can catch up on earlier days |
-| `/week` | **Last 7 days:** each nutrient's 7-day average against its target, days in range, 1–3 suggestions with a one-tap fix, and the weekend vs. weekday trend once there's enough data |
+| `/` | Welcome card when nothing is saved; goes to the Food log once you're set up |
+| `/setup` | Your details: units, height, weight, date of birth, sex (female, male, non-binary), activity level. Reused, prefilled, to edit them later |
+| `/targets` | Your ranges, each with an ⓘ explanation of how it was calculated |
+| `/log` | **Food log.** Pick today or any of the 6 days before. Left: that day's totals (no targets) and foods, with amount and Remove, and Mark day complete. Right: add food (search with suggestions, your recipes, recent, browse common foods, add your own) |
+| `/week` | **Last 7 days:** day strip, each nutrient's 7-day average as a bar against its target, days in range, and half-logged days to fix |
+| `/history` | Pick any day to see the same view for the 7 days ending on it |
+| `/recipes` | Paste a recipe (reads its per-serving nutrition panel) or build one from ingredients; saved recipes are logged by the serving |
+| `/today` | Old address; forwards to `/log` |
 
 ## How the 7-day window works
 

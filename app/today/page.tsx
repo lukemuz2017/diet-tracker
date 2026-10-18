@@ -1,14 +1,6 @@
-import type { Metadata } from "next";
-import { RequireProfile } from "@/components/Gates";
-import { TodayView } from "@/components/TodayView";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Today" };
-
+// Today and Add food merged into the Food log; keep old links working.
 export default function TodayPage() {
-  return (
-    <>
-      <RequireProfile />
-      <TodayView />
-    </>
-  );
+  redirect("/log");
 }

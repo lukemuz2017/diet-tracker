@@ -67,8 +67,8 @@ export function TargetsView() {
           normal. These are estimates for maintaining your weight, not medical advice.
         </p>
 
-        <ButtonLink href={firstVisit ? "/log" : "/today"} className="min-h-12 self-start px-7 text-[17px]">
-          {firstVisit ? "Log your first food" : "Back to Today"}
+        <ButtonLink href="/log" className="min-h-12 self-start px-7 text-[17px]">
+          {firstVisit ? "Log your first food" : "Back to Food log"}
         </ButtonLink>
       </div>
     </>

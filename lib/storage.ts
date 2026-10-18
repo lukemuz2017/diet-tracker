@@ -5,6 +5,7 @@
 import { useSyncExternalStore } from "react";
 import type { Nutrients } from "./nutrients.ts";
 import { isProfile, type Profile } from "./profile.ts";
+import type { Recipe } from "./recipe.ts";
 
 export interface Entry {
   id: string;
@@ -25,10 +26,11 @@ export interface SavedData {
   entries: Entry[];
   /** Dates the person marked complete. */
   completeDays: string[];
+  recipes: Recipe[];
 }
 
 const KEY = "diet-tracker:v1";
-const EMPTY: SavedData = { version: 1, profile: null, entries: [], completeDays: [] };
+const EMPTY: SavedData = { version: 1, profile: null, entries: [], completeDays: [], recipes: [] };
 
 let cache: SavedData | null = null;
 const listeners = new Set<() => void>();
@@ -44,6 +46,7 @@ function parse(raw: string | null): SavedData {
         profile: isProfile(value.profile) ? value.profile : null,
         entries: Array.isArray(value.entries) ? value.entries : [],
         completeDays: Array.isArray(value.completeDays) ? value.completeDays : [],
+        recipes: Array.isArray(value.recipes) ? value.recipes : [],
       };
     }
   } catch {

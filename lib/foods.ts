@@ -122,8 +122,12 @@ const AMOUNTS: Record<string, AmountSpec> = {
   darkChocolate: oz(1, OZ_SMALL),
 };
 
-/** The unit a food is measured in; custom foods are portions. */
+/** Saved recipes are logged by the serving. */
+export const RECIPE_SERVINGS: AmountSpec = { base: 1, one: "serving", many: "servings", choices: [0.5, 1, 1.5, 2, 3] };
+
+/** The unit a food is measured in; recipes are servings, custom foods are portions. */
 export function amountFor(foodId: string | undefined): AmountSpec {
+  if (foodId?.startsWith("recipe:")) return RECIPE_SERVINGS;
   return (foodId && AMOUNTS[foodId]) || PORTION;
 }
 
