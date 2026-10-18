@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { Sticker, type StickerTone } from "@/components/ui/Sticker";
 import { PlusIcon } from "@/components/ui/icons";
-import { choicesWith, formatAmount, multipleFor, quantityFor, type AmountSpec } from "@/lib/amounts";
+import { choicesWith, formatAmount, formatChoice, multipleFor, quantityFor, type AmountSpec } from "@/lib/amounts";
 import { formatValue, goodSourceTags } from "@/lib/log";
 import type { Nutrients } from "@/lib/nutrients";
 
@@ -36,7 +36,7 @@ export function AmountSelect({
       >
         {choicesWith(spec, quantity).map((choice) => (
           <option key={choice} value={choice}>
-            {formatAmount(spec, choice)}
+            {formatChoice(spec, choice)}
           </option>
         ))}
       </select>

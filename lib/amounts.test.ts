@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PORTION, choicesWith, formatAmount, formatQuantity, multipleFor, quantityFor, type AmountSpec } from "./amounts.ts";
+import { PORTION, choicesWith, formatAmount, formatChoice, formatQuantity, multipleFor, quantityFor, type AmountSpec } from "./amounts.ts";
 
 const eggs: AmountSpec = { base: 1, one: "egg", many: "eggs", choices: [1, 2, 3, 4] };
 const beans: AmountSpec = { base: 0.5, one: "cup", many: "cups", choices: [0.25, 0.5, 0.75, 1, 1.5, 2] };
@@ -32,4 +32,12 @@ test("entries store a multiple of the base amount", () => {
 test("the picker keeps an amount that isn't a standard choice", () => {
   assert.deepEqual(choicesWith(eggs, 2), [1, 2, 3, 4]);
   assert.deepEqual(choicesWith(eggs, 6), [1, 2, 3, 4, 6]);
+});
+
+test("whole foods show just the number in the picker", () => {
+  const banana: AmountSpec = { base: 1, one: "banana", many: "bananas", choices: [0.5, 1, 2], bare: true };
+  assert.equal(formatChoice(banana, 2), "2");
+  assert.equal(formatChoice(banana, 0.5), "½");
+  assert.equal(formatAmount(banana, 2), "2 bananas"); // messages still name the unit
+  assert.equal(formatChoice(beans, 0.5), "½ cup");
 });

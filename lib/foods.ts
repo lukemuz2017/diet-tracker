@@ -70,37 +70,39 @@ const CUPS = [0.25, 0.5, 0.75, 1, 1.5, 2];
 const TBSP = [1, 2, 3, 4];
 const OZ_MEAT = [2, 3, 4, 6, 8];
 const OZ_SMALL = [0.5, 1, 1.5, 2];
-const DECK = "3 oz is about the size of a deck of cards";
+const DECK = "3 ounces is about the size of a deck of cards";
 const count = (one: string, many: string, choices = COUNT_HALVES, base = 1): AmountSpec => ({ base, one, many, choices });
+/** Whole foods counted by the food itself: the picker shows just "1", "2". */
+const whole = (one: string, many: string, choices = COUNT_HALVES, base = 1): AmountSpec => ({ ...count(one, many, choices, base), bare: true });
 const cups = (base: number, choices = CUPS): AmountSpec => ({ base, one: "cup", many: "cups", choices });
 const tbsp = (base: number, choices = TBSP): AmountSpec => ({ base, one: "tbsp", many: "tbsp", choices });
-const oz = (base: number, choices: number[], note?: string): AmountSpec => ({ base, one: "oz", many: "oz", choices, note });
+const oz = (base: number, choices: number[], note?: string): AmountSpec => ({ base, one: "ounce", many: "ounces", choices, note });
 
 const AMOUNTS: Record<string, AmountSpec> = {
-  banana: count("banana", "bananas"),
-  apple: count("apple", "apples"),
-  orange: count("orange", "oranges"),
+  banana: whole("banana", "bananas"),
+  apple: whole("apple", "apples"),
+  orange: whole("orange", "oranges"),
   strawberries: cups(1),
   blueberries: cups(1),
-  avocado: count("avocado", "avocados", [0.25, 0.5, 1], 0.5),
+  avocado: whole("avocado", "avocados", [0.25, 0.5, 1], 0.5),
   spinach: cups(0.5),
   broccoli: cups(0.5),
-  carrots: count("carrot", "carrots", [1, 2, 3]),
-  sweetPotato: count("sweet potato", "sweet potatoes"),
-  potato: count("potato", "potatoes"),
-  tomato: count("tomato", "tomatoes"),
-  redBellPepper: count("pepper", "peppers"),
+  carrots: whole("carrot", "carrots", [1, 2, 3]),
+  sweetPotato: whole("sweet potato", "sweet potatoes"),
+  potato: whole("potato", "potatoes"),
+  tomato: whole("tomato", "tomatoes"),
+  redBellPepper: whole("pepper", "peppers"),
   saladGreens: cups(2, [1, 2, 3, 4]),
-  egg: count("egg", "eggs", COUNT),
+  egg: whole("egg", "eggs", COUNT),
   chickenBreast: oz(3, OZ_MEAT, DECK),
   salmon: oz(3, OZ_MEAT, DECK),
-  tuna: oz(3, OZ_MEAT, "drained; a 5 oz can has about 4 oz of tuna"),
+  tuna: oz(3, OZ_MEAT, "drained; a 5-ounce can has about 4 ounces of tuna"),
   tofu: cups(0.5),
   blackBeans: cups(0.5),
   lentils: cups(0.5),
   chickpeas: cups(0.5),
   peanutButter: tbsp(2),
-  almonds: oz(1, OZ_SMALL, "1 oz is about 23 almonds"),
+  almonds: oz(1, OZ_SMALL, "1 ounce is about 23 almonds"),
   groundBeef: oz(3, OZ_MEAT, DECK),
   greekYogurt: count("container (7 oz)", "containers (7 oz)", COUNT_HALVES),
   milk: cups(1),

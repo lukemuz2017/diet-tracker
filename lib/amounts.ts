@@ -12,6 +12,8 @@ export interface AmountSpec {
   choices: number[];
   /** A size hint, e.g. "about the size of a deck of cards". */
   note?: string;
+  /** Whole foods (banana, egg): the picker shows just the number. */
+  bare?: boolean;
 }
 
 /** Custom foods: the numbers entered are for one portion of what was eaten. */
@@ -35,6 +37,11 @@ export function formatAmount(spec: AmountSpec, quantity: number): string {
 }
 
 const close = (a: number, b: number) => Math.abs(a - b) < 0.001;
+
+/** A picker option: "2" for whole foods, otherwise "½ cup", "3 ounces". */
+export function formatChoice(spec: AmountSpec, quantity: number): string {
+  return spec.bare ? formatQuantity(quantity) : formatAmount(spec, quantity);
+}
 
 /** The picker's choices, including `current` if it isn't one of them. */
 export function choicesWith(spec: AmountSpec, current: number): number[] {
