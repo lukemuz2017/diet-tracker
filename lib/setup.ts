@@ -1,6 +1,7 @@
 // Validation for the setup form. Messages sit next to the field and say what
 // to do next (AGENTS.md: Forms). Checked by lib/setup.test.ts.
 
+import { ageOn, isRealDate } from "./dates.ts";
 import { CM_PER_INCH, KG_PER_LB, cmToFeetInches, trimNumber, type Activity, type Profile, type Sex, type Units } from "./profile.ts";
 
 /** What the person typed, kept as strings so an error never changes it. */
@@ -10,12 +11,14 @@ export interface SetupValues {
   heightIn: string;
   heightCm: string;
   weight: string;
-  age: string;
+  birthMonth: string;
+  birthDay: string;
+  birthYear: string;
   sex: Sex | null;
   activity: Activity | null;
 }
 
-export type SetupField = "height" | "weight" | "age" | "sex" | "activity";
+export type SetupField = "height" | "weight" | "birthDate" | "sex" | "activity";
 export type SetupErrors = Partial<Record<SetupField, string>>;
 
 export const LIMITS = {
@@ -23,7 +26,7 @@ export const LIMITS = {
   heightIn: { min: 48, max: 90 },
   weightKg: { min: 32, max: 318 },
   weightLb: { min: 70, max: 700 },
-  age: { min: 19, max: 100 },
+  age: { min: 18, max: 100 },
 };
 
 export const EMPTY_SETUP: SetupValues = {
@@ -32,10 +35,34 @@ export const EMPTY_SETUP: SetupValues = {
   heightIn: "",
   heightCm: "",
   weight: "",
-  age: "",
+  birthMonth: "",
+  birthDay: "",
+  birthYear: "",
   sex: null,
   activity: null,
 };
+
+const DATE_EXAMPLE = "like 03 14 1992";
+
+/** Reads month, day and year into "YYYY-MM-DD", checking the age is 18–100 on `today`. */
+function readBirthDate(values: SetupValues, today: string): { date?: string; error?: string } {
+  const fields = [values.birthMonth, values.birthDay, values.birthYear].map((text) => text.trim());
+  if (fields.every((text) => text === "")) return { error: `Enter your date of birth, ${DATE_EXAMPLE}.` };
+  if (!fields.every((text) => /^\d+$/.test(text))) {
+    return { error: `Enter your date of birth as numbers for month, day and year, ${DATE_EXAMPLE}.` };
+  }
+  const [month, day, year] = fields.map(Number);
+  if (fields[2].length !== 4) return { error: "Enter the year with four digits, like 1992." };
+  if (month < 1 || month > 12) return { error: "Enter a month between 1 and 12." };
+  if (!isRealDate(year, month, day)) return { error: `Enter a real date, ${DATE_EXAMPLE}.` };
+
+  const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  if (date > today) return { error: "Enter a date of birth in the past." };
+  const age = ageOn(date, today);
+  if (age < LIMITS.age.min) return { error: "These targets are for adults 18 and over. Check the year you entered." };
+  if (age > LIMITS.age.max) return { error: "These targets cover ages 18 to 100. Check the year you entered." };
+  return { date };
+}
 
 function parseNumber(text: string): number | null {
   const trimmed = text.trim();
@@ -79,18 +106,16 @@ function readWeightKg(values: SetupValues): { kg?: number; error?: string } {
   return { kg: value * KG_PER_LB };
 }
 
-export function validateSetup(values: SetupValues): { profile: Profile | null; errors: SetupErrors } {
+/** `today` is the local date, "YYYY-MM-DD", used to check the age. */
+export function validateSetup(values: SetupValues, today: string): { profile: Profile | null; errors: SetupErrors } {
   const errors: SetupErrors = {};
   const height = readHeightCm(values);
   const weight = readWeightKg(values);
-  const age = parseNumber(values.age);
+  const birth = readBirthDate(values, today);
 
   if (height.error) errors.height = height.error;
   if (weight.error) errors.weight = weight.error;
-  if (age === null || !Number.isInteger(age)) errors.age = "Enter your age in whole years, like 34.";
-  else if (age < LIMITS.age.min || age > LIMITS.age.max) {
-    errors.age = `Enter an age between ${LIMITS.age.min} and ${LIMITS.age.max}. These targets are for adults.`;
-  }
+  if (birth.error) errors.birthDate = birth.error;
   if (!values.sex) errors.sex = "Choose one so we can estimate your needs.";
   if (!values.activity) errors.activity = "Choose the option closest to a typical week.";
 
@@ -100,7 +125,7 @@ export function validateSetup(values: SetupValues): { profile: Profile | null; e
       units: values.units,
       heightCm: height.cm!,
       weightKg: weight.kg!,
-      age: age!,
+      birthDate: birth.date!,
       sex: values.sex!,
       activity: values.activity!,
     },
@@ -111,13 +136,16 @@ export function validateSetup(values: SetupValues): { profile: Profile | null; e
 /** Prefills the form from a saved profile, for editing. */
 export function valuesFromProfile(profile: Profile): SetupValues {
   const { feet, inches } = cmToFeetInches(profile.heightCm);
+  const [year, month, day] = profile.birthDate.split("-");
   return {
     units: profile.units,
     heightFt: String(feet),
     heightIn: String(inches),
     heightCm: trimNumber(profile.heightCm),
     weight: profile.units === "us" ? trimNumber(profile.weightKg / KG_PER_LB) : trimNumber(profile.weightKg),
-    age: String(profile.age),
+    birthMonth: month,
+    birthDay: day,
+    birthYear: year,
     sex: profile.sex,
     activity: profile.activity,
   };

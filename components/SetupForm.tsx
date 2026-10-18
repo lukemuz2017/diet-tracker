@@ -5,12 +5,14 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/Card";
 import { ChoiceField, FieldError, TextField } from "@/components/ui/Field";
-import { ACTIVITY_OPTIONS, type Profile } from "@/lib/profile";
+import { ACTIVITY_OPTIONS, SEX_OPTIONS, type Profile } from "@/lib/profile";
 import { EMPTY_SETUP, switchUnits, validateSetup, valuesFromProfile, type SetupField, type SetupValues } from "@/lib/setup";
 import { updateData, useSavedData } from "@/lib/storage";
+import { useToday } from "@/lib/useToday";
 
 export function SetupScreen() {
   const data = useSavedData();
+  const today = useToday();
   const editing = Boolean(data?.profile);
 
   return (
@@ -21,27 +23,32 @@ export function SetupScreen() {
         description="Six quick questions. We use them only to estimate your daily ranges, and they stay on this device."
       />
       {/* The form waits for saved data so editing starts prefilled. */}
-      {data && <SetupForm key={editing ? "edit" : "new"} saved={data.profile} />}
+      {data && today && <SetupForm key={editing ? "edit" : "new"} saved={data.profile} today={today} />}
     </>
   );
 }
 
 const WHY = "Used only to estimate your needs. Stays on this device.";
 
+function describedBy(...ids: (string | false | undefined)[]) {
+  return ids.filter(Boolean).join(" ") || undefined;
+}
+
 /** Where focus goes when a field has an error, in form order. */
 function firstErrorTarget(field: SetupField, values: SetupValues) {
   if (field === "height") return values.units === "us" ? "setup-height-ft" : "setup-height-cm";
+  if (field === "birthDate") return "setup-birth-month";
   if (field === "sex") return `sex-${values.sex ?? "female"}`;
   if (field === "activity") return `activity-${values.activity ?? "sedentary"}`;
   return `setup-${field}`;
 }
 
-export function SetupForm({ saved }: { saved: Profile | null }) {
+export function SetupForm({ saved, today }: { saved: Profile | null; today: string }) {
   const router = useRouter();
   const [values, setValues] = useState<SetupValues>(saved ? valuesFromProfile(saved) : EMPTY_SETUP);
   // Errors show after the first submit, then update as the person fixes them.
   const [submitted, setSubmitted] = useState(false);
-  const { errors } = validateSetup(values);
+  const { errors } = validateSetup(values, today);
   const shown = submitted ? errors : {};
 
   const set = (patch: Partial<SetupValues>) => setValues((current) => ({ ...current, ...patch }));
@@ -49,9 +56,9 @@ export function SetupForm({ saved }: { saved: Profile | null }) {
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSubmitted(true);
-    const result = validateSetup(values);
+    const result = validateSetup(values, today);
     if (!result.profile) {
-      const order: SetupField[] = ["height", "weight", "age", "sex", "activity"];
+      const order: SetupField[] = ["height", "weight", "birthDate", "sex", "activity"];
       const first = order.find((field) => result.errors[field])!;
       document.getElementById(firstErrorTarget(first, values))?.focus();
       return;
@@ -132,25 +139,54 @@ export function SetupForm({ saved }: { saved: Profile | null }) {
         error={shown.weight}
       />
 
-      <TextField
-        id="setup-age"
-        label="Age"
-        unit={{ short: "years", long: "years" }}
-        inputMode="numeric"
-        autoComplete="off"
-        value={values.age}
-        onChange={(event) => set({ age: event.target.value })}
-        error={shown.age}
-      />
+      <fieldset className="flex flex-col gap-1.5">
+        <legend className="pb-1.5 text-[15px] font-bold">Date of birth</legend>
+        <p id="setup-birth-hint" className="-mt-1.5 text-[13px] text-muted">
+          For example, 03 14 1992. Used only to work out your age.
+        </p>
+        <div className="grid grid-cols-[1fr_1fr_1.6fr] gap-3">
+          <TextField
+            id="setup-birth-month"
+            label="Month"
+            inputMode="numeric"
+            autoComplete="bday-month"
+            maxLength={2}
+            value={values.birthMonth}
+            onChange={(event) => set({ birthMonth: event.target.value })}
+            invalid={Boolean(shown.birthDate)}
+            aria-describedby={describedBy("setup-birth-hint", shown.birthDate && "setup-birth-error")}
+          />
+          <TextField
+            id="setup-birth-day"
+            label="Day"
+            inputMode="numeric"
+            autoComplete="bday-day"
+            maxLength={2}
+            value={values.birthDay}
+            onChange={(event) => set({ birthDay: event.target.value })}
+            invalid={Boolean(shown.birthDate)}
+            aria-describedby={describedBy("setup-birth-hint", shown.birthDate && "setup-birth-error")}
+          />
+          <TextField
+            id="setup-birth-year"
+            label="Year"
+            inputMode="numeric"
+            autoComplete="bday-year"
+            maxLength={4}
+            value={values.birthYear}
+            onChange={(event) => set({ birthYear: event.target.value })}
+            invalid={Boolean(shown.birthDate)}
+            aria-describedby={describedBy("setup-birth-hint", shown.birthDate && "setup-birth-error")}
+          />
+        </div>
+        {shown.birthDate && <FieldError id="setup-birth-error">{shown.birthDate}</FieldError>}
+      </fieldset>
 
       <ChoiceField
         name="sex"
         legend="Sex"
-        hint="Calorie and vitamin estimates differ by sex. Stays on this device."
-        options={[
-          { value: "female", label: "Female" },
-          { value: "male", label: "Male" },
-        ]}
+        hint="Calorie and vitamin estimates differ by sex; non-binary uses a blend of both. Stays on this device."
+        options={SEX_OPTIONS}
         value={values.sex}
         onChange={(sex) => set({ sex })}
         error={shown.sex}

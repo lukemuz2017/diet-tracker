@@ -2,43 +2,65 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { EMPTY_SETUP, switchUnits, validateSetup, valuesFromProfile, type SetupValues } from "./setup.ts";
 
+const TODAY = "2026-10-18";
+
 const filled: SetupValues = {
   units: "us",
   heightFt: "5",
   heightIn: "10",
   heightCm: "",
   weight: "160",
-  age: "34",
+  birthMonth: "03",
+  birthDay: "14",
+  birthYear: "1992",
   sex: "male",
   activity: "moderate",
 };
 
+const birthError = (month: string, day: string, year: string) =>
+  validateSetup({ ...filled, birthMonth: month, birthDay: day, birthYear: year }, TODAY).errors.birthDate;
+
 test("an empty form gets a message for every field", () => {
-  const { profile, errors } = validateSetup(EMPTY_SETUP);
+  const { profile, errors } = validateSetup(EMPTY_SETUP, TODAY);
   assert.equal(profile, null);
-  assert.deepEqual(Object.keys(errors).sort(), ["activity", "age", "height", "sex", "weight"]);
+  assert.deepEqual(Object.keys(errors).sort(), ["activity", "birthDate", "height", "sex", "weight"]);
 });
 
 test("a filled form becomes a metric profile", () => {
-  const { profile, errors } = validateSetup(filled);
+  const { profile, errors } = validateSetup(filled, TODAY);
   assert.deepEqual(errors, {});
   assert.ok(profile);
   assert.equal(profile.heightCm, 70 * 2.54);
   assert.ok(Math.abs(profile.weightKg - 72.57) < 0.01);
+  assert.equal(profile.birthDate, "1992-03-14");
 });
 
 test("messages say what to do next", () => {
-  assert.equal(validateSetup({ ...filled, weight: "about 160" }).errors.weight, "Enter your weight in pounds, like 160.");
-  assert.equal(validateSetup({ ...filled, heightIn: "13" }).errors.height, "Inches should be between 0 and 11.");
-  assert.equal(validateSetup({ ...filled, heightFt: "8" }).errors.height, "Enter a height between 4 ft and 7 ft 6 in.");
-  assert.match(validateSetup({ ...filled, age: "17" }).errors.age!, /between 19 and 100/);
-  assert.equal(validateSetup({ ...filled, age: "34.5" }).errors.age, "Enter your age in whole years, like 34.");
+  assert.equal(validateSetup({ ...filled, weight: "about 160" }, TODAY).errors.weight, "Enter your weight in pounds, like 160.");
+  assert.equal(validateSetup({ ...filled, heightIn: "13" }, TODAY).errors.height, "Inches should be between 0 and 11.");
+  assert.equal(validateSetup({ ...filled, heightFt: "8" }, TODAY).errors.height, "Enter a height between 4 ft and 7 ft 6 in.");
 });
 
 test("height limits include exactly 4 ft and 7 ft 6 in", () => {
-  assert.equal(validateSetup({ ...filled, heightFt: "4", heightIn: "" }).errors.height, undefined);
-  assert.equal(validateSetup({ ...filled, heightFt: "7", heightIn: "6" }).errors.height, undefined);
-  assert.ok(validateSetup({ ...filled, heightFt: "7", heightIn: "7" }).errors.height);
+  assert.equal(validateSetup({ ...filled, heightFt: "4", heightIn: "" }, TODAY).errors.height, undefined);
+  assert.equal(validateSetup({ ...filled, heightFt: "7", heightIn: "6" }, TODAY).errors.height, undefined);
+  assert.ok(validateSetup({ ...filled, heightFt: "7", heightIn: "7" }, TODAY).errors.height);
+});
+
+test("date of birth must be a real date in the past", () => {
+  assert.equal(birthError("", "", ""), "Enter your date of birth, like 03 14 1992.");
+  assert.equal(birthError("02", "30", "1990"), "Enter a real date, like 03 14 1992.");
+  assert.equal(birthError("13", "01", "1990"), "Enter a month between 1 and 12.");
+  assert.equal(birthError("03", "14", "92"), "Enter the year with four digits, like 1992.");
+  assert.equal(birthError("03", "14", "2030"), "Enter a date of birth in the past.");
+  assert.match(birthError("March", "14", "1992")!, /as numbers/);
+});
+
+test("ages 18 to 100 are accepted, counted to the day", () => {
+  assert.equal(birthError("10", "18", "2008"), undefined); // 18 today
+  assert.match(birthError("10", "19", "2008")!, /adults 18 and over/); // 18 tomorrow
+  assert.equal(birthError("10", "19", "1925"), undefined); // 100 until tomorrow
+  assert.match(birthError("10", "18", "1925")!, /ages 18 to 100/); // 101 today
 });
 
 test("switching units converts what was typed", () => {
@@ -52,9 +74,10 @@ test("switching units converts what was typed", () => {
 });
 
 test("editing round-trips a saved profile", () => {
-  const { profile } = validateSetup(filled);
+  const { profile } = validateSetup(filled, TODAY);
   const values = valuesFromProfile(profile!);
   assert.equal(values.heightFt, "5");
   assert.equal(values.heightIn, "10");
   assert.equal(values.weight, "160");
+  assert.deepEqual([values.birthMonth, values.birthDay, values.birthYear], ["03", "14", "1992"]);
 });

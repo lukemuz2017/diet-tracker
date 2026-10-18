@@ -1,18 +1,28 @@
 // The person's details from setup, stored in metric at full precision so
-// switching units and editing round-trip exactly.
+// switching units and editing round-trip exactly. Age is worked out from the
+// birth date each day, so it stays right over time.
+
+import { ageOn } from "./dates.ts";
 
 export type Units = "us" | "metric";
-export type Sex = "female" | "male";
+export type Sex = "female" | "male" | "nonbinary";
 export type Activity = "sedentary" | "light" | "moderate" | "very";
 
 export interface Profile {
   units: Units;
   heightCm: number;
   weightKg: number;
-  age: number;
+  /** "YYYY-MM-DD" */
+  birthDate: string;
   sex: Sex;
   activity: Activity;
 }
+
+export const SEX_OPTIONS: { value: Sex; label: string }[] = [
+  { value: "female", label: "Female" },
+  { value: "male", label: "Male" },
+  { value: "nonbinary", label: "Non-binary" },
+];
 
 export const ACTIVITY_OPTIONS: { value: Activity; label: string; description: string; factor: number }[] = [
   { value: "sedentary", label: "Mostly sitting", description: "Desk job, little exercise", factor: 1.2 },
@@ -34,9 +44,27 @@ export function trimNumber(value: number): string {
   return String(Math.round(value * 10) / 10);
 }
 
+export function profileAge(profile: Profile, today: string): number {
+  return ageOn(profile.birthDate, today);
+}
+
+/** Checks a stored profile has the current shape (older saves lack birthDate). */
+export function isProfile(value: unknown): value is Profile {
+  if (!value || typeof value !== "object") return false;
+  const p = value as Record<string, unknown>;
+  return (
+    typeof p.heightCm === "number" &&
+    typeof p.weightKg === "number" &&
+    typeof p.birthDate === "string" &&
+    SEX_OPTIONS.some((option) => option.value === p.sex) &&
+    ACTIVITY_OPTIONS.some((option) => option.value === p.activity)
+  );
+}
+
 /** "5 ft 10 in · 160 lb · 34 · male · moderately active" */
-export function describeProfile(profile: Profile): string {
+export function describeProfile(profile: Profile, today: string): string {
   const activity = ACTIVITY_OPTIONS.find((option) => option.value === profile.activity)!;
+  const sex = SEX_OPTIONS.find((option) => option.value === profile.sex)!.label.toLowerCase();
   const body =
     profile.units === "us"
       ? (() => {
@@ -44,5 +72,5 @@ export function describeProfile(profile: Profile): string {
           return `${feet} ft ${inches} in · ${Math.round(profile.weightKg / KG_PER_LB)} lb`;
         })()
       : `${Math.round(profile.heightCm)} cm · ${trimNumber(profile.weightKg)} kg`;
-  return `${body} · ${profile.age} · ${profile.sex} · ${activity.label.toLowerCase()}`;
+  return `${body} · ${profileAge(profile, today)} · ${sex} · ${activity.label.toLowerCase()}`;
 }

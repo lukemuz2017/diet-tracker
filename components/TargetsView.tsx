@@ -6,14 +6,16 @@ import { InfoButton } from "@/components/ui/InfoButton";
 import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { describeProfile } from "@/lib/profile";
 import { useSavedData } from "@/lib/storage";
+import { useToday } from "@/lib/useToday";
 import { computeTargets, explainTarget, formatTarget } from "@/lib/targets";
 
 export function TargetsView() {
   const data = useSavedData();
-  if (!data?.profile) return <PageHeader title="Your ranges" />;
+  const today = useToday();
+  if (!data?.profile || !today) return <PageHeader title="Your ranges" />;
 
   const { profile } = data;
-  const targets = computeTargets(profile);
+  const targets = computeTargets(profile, today);
   const firstVisit = data.entries.length === 0;
 
   return (
@@ -27,7 +29,7 @@ export function TargetsView() {
         <Card className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
           <p className="text-[15px]">
             <span className="text-muted">Based on </span>
-            <b>{describeProfile(profile)}</b>
+            <b>{describeProfile(profile, today)}</b>
           </p>
           <ButtonLink href="/setup" variant="quiet">
             Edit details
@@ -49,7 +51,7 @@ export function TargetsView() {
                         <b>
                           {label}: {range} a day.
                         </b>{" "}
-                        {explainTarget(key, profile, targets)}
+                        {explainTarget(key, profile, targets, today)}
                       </InfoButton>
                     </span>
                     <span className="text-right tabular-nums">{range}</span>

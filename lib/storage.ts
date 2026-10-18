@@ -4,7 +4,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { Nutrients } from "./nutrients.ts";
-import type { Profile } from "./profile.ts";
+import { isProfile, type Profile } from "./profile.ts";
 
 export interface Entry {
   id: string;
@@ -40,7 +40,8 @@ function parse(raw: string | null): SavedData {
     if (value && typeof value === "object" && value.version === 1) {
       return {
         version: 1,
-        profile: value.profile ?? null,
+        // A profile saved before a shape change is dropped, so setup runs again.
+        profile: isProfile(value.profile) ? value.profile : null,
         entries: Array.isArray(value.entries) ? value.entries : [],
         completeDays: Array.isArray(value.completeDays) ? value.completeDays : [],
       };
