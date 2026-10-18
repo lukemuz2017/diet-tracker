@@ -55,7 +55,7 @@ export function FoodLog() {
   }
 
   return (
-    <>
+    <div className="max-w-3xl">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <PageHeader title="This week" description={`${formatDay(start)} – ${formatDay(today)}`} />
         <button
@@ -142,7 +142,7 @@ export function FoodLog() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
