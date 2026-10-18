@@ -13,7 +13,7 @@ The app's visual direction, chosen from four mood boards on Oct 18, 2026. The PD
 | `soil` | `#1F2A1C` | Main text, value bars, dark message background |
 | `muted` | `#4A5545` | Secondary text, hints |
 | `leaf` | `#2E6B3F` | Primary buttons, active nav, links, "in range" |
-| `tomato` | `#C8402A` | Errors and "over a limit" only |
+| `tomato` | `#C8402A` | Errors, bar fills below or over a range |
 | `lemon` | `#F2C94C` | "To go" / below a minimum, highlights, stickers |
 | `kraft` | `#C9A27A` | Signature panels, sticker variety, image backgrounds |
 | `line` | `#DDE5CF` | Dividers and card borders |
@@ -34,7 +34,7 @@ Checked contrast (WCAG AA needs 4.5:1 for body text, 3:1 for large text and UI):
 | soil on lemon | 9.4 |
 | soil on kraft | 6.4 |
 
-Rules: lemon and kraft never carry white text. Tomato means "over a limit" or "error", nothing else. Going *over* a minimum (more fiber, more vitamin C) is never shown in tomato.
+Rules: lemon and kraft never carry white text. Tomato means "error", "over a limit", or a bar that hasn't reached its range yet (student's choice). Going *over* a minimum (more fiber, more vitamin C) is never shown in tomato.
 
 ## Type
 
@@ -56,7 +56,7 @@ Rules: lemon and kraft never carry white text. Tomato means "over a limit" or "e
 - **Buttons:** primary (leaf pill, Bricolage 800), secondary (soil outline pill), quiet (underlined leaf text). Keyboard focus is a two-ring outline: paper, then soil.
 - **Form field:** label (700, 15 px) → optional hint (muted, 13 px; used for "why we ask") → input (48 px tall, 10 px radius, field-colored border, white) → error. An error turns the border tomato, adds an icon and a message that says what to do ("Enter calories as a number, like 120."), and never clears what was typed. One column, always.
 - **Status chips:** `To go` (lemon), `In range` (leaf), `Over by …` (tomato), `Not enough data` (dashed outline). The chip text always states the status, so color is never the only signal.
-- **Nutrient bar:** track, then the target range as a band, then a thin soil bar for the value. Under it: "62 g of 90–120 g".
+- **Nutrient bar:** track, then the target range as a band with soil tick marks at its edges, then a full-height fill for the value: tomato until it reaches the range, leaf once in range, tomato again past an upper limit (going over a minimum stays leaf). The chip and the line under it ("62 g of 90–120 g") always say it in words, so color isn't the only signal.
 - **Info button (ⓘ):** a round 28 px button with `aria-label="About the protein range"` and `aria-expanded`. It opens a small paper popover with a soil border and a kraft offset shadow, and closes on Escape or a click outside.
 - **Produce stickers:** pill or oval tags with a thin inner ring, slightly rotated (−3° to 3°). Used for "what it adds" tags and quick-add foods. Uppercase in tags, sentence case on quick-add buttons ("+ Banana").
 - **Messages:** an undo toast (soil background, lemon "Undo"); success notes (light leaf `#DCE8D0`); attention notes (light lemon `#FBEFC4`) such as "Thursday looks incomplete".

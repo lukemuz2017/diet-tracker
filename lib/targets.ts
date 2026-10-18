@@ -1,8 +1,9 @@
-// Target ranges for maintaining weight (flows.md: What's tracked). Pure
-// functions, checked by lib/targets.test.ts.
+// Daily targets for maintaining weight. Every rule and number comes from
+// research/nutrition-targets.md, which cites its sources. Pure functions,
+// checked by lib/targets.test.ts.
 
 import { NUTRIENTS, type NutrientKey } from "./nutrients.ts";
-import { ACTIVITY_OPTIONS, profileAge, type Profile } from "./profile.ts";
+import { ACTIVITY_OPTIONS, profileAge, type Activity, type Profile } from "./profile.ts";
 
 export type TargetKind = "range" | "min" | "max";
 
@@ -12,6 +13,8 @@ export interface Target {
   min?: number;
   /** Upper bound for "range" and "max". */
   max?: number;
+  /** Tolerable Upper Intake Level, for "min" targets that have one. */
+  upper?: number;
 }
 
 export type Targets = Record<NutrientKey, Target>;
@@ -25,6 +28,65 @@ export function ageBand(age: number): AgeBand {
   if (age <= 50) return "31-50";
   if (age <= 70) return "51-70";
   return "71+";
+}
+
+// National Academies 2023 estimated energy requirement (EER) equations:
+// constant + a × age + h × height (cm) + w × weight (kg). The four activity
+// levels are the report's inactive, low active, active and very active.
+type Coefficients = [constant: number, age: number, height: number, weight: number];
+type EquationSet = Record<"male" | "female", Record<Activity, Coefficients>>;
+
+const ADULT_EER: EquationSet = {
+  male: {
+    sedentary: [753.07, -10.83, 6.5, 14.1],
+    light: [581.47, -10.83, 8.3, 14.94],
+    moderate: [1004.82, -10.83, 6.52, 15.91],
+    very: [-517.88, -10.83, 15.61, 19.11],
+  },
+  female: {
+    sedentary: [584.9, -7.01, 5.72, 11.71],
+    light: [575.77, -7.01, 6.6, 12.14],
+    moderate: [710.25, -7.01, 6.54, 12.34],
+    very: [511.83, -7.01, 9.07, 12.56],
+  },
+};
+
+// Ages 14 to 18, plus 20 kcal/day for growth.
+const TEEN_EER: EquationSet = {
+  male: {
+    sedentary: [-447.51, 3.68, 13.01, 13.15],
+    light: [19.12, 3.68, 8.62, 20.28],
+    moderate: [-388.19, 3.68, 12.66, 20.46],
+    very: [-671.75, 3.68, 15.38, 23.25],
+  },
+  female: {
+    sedentary: [55.59, -22.25, 8.43, 17.07],
+    light: [-297.54, -22.25, 12.77, 14.73],
+    moderate: [-189.55, -22.25, 11.74, 18.34],
+    very: [-709.59, -22.25, 18.22, 14.25],
+  },
+};
+const TEEN_GROWTH_KCAL = 20;
+
+/** Estimated energy requirement for one sex's equation, in kcal/day. */
+export function energyRequirement(sex: "male" | "female", profile: Profile, today: string): number {
+  const age = profileAge(profile, today);
+  const teen = age <= 18;
+  const [constant, a, h, w] = (teen ? TEEN_EER : ADULT_EER)[sex][profile.activity];
+  return constant + a * age + h * profile.heightCm + w * profile.weightKg + (teen ? TEEN_GROWTH_KCAL : 0);
+}
+
+function roundTo(value: number, step: number): number {
+  return Math.round(value / step) * step;
+}
+
+/**
+ * Estimated calories to maintain current weight, rounded to 10 kcal.
+ * Non-binary uses the midpoint of the female and male equations.
+ */
+export function maintenanceCalories(profile: Profile, today: string): number {
+  if (profile.sex !== "nonbinary") return roundTo(energyRequirement(profile.sex, profile, today), 10);
+  return roundTo((energyRequirement("female", profile, today) + energyRequirement("male", profile, today)) / 2, 10);
 }
 
 type ByBand = Record<AgeBand, number>;
@@ -45,55 +107,73 @@ const MICRONUTRIENTS: Record<"potassium" | "calcium" | "iron" | "vitaminA" | "vi
   vitaminC: { male: band(75, 90, 90, 90, 90), female: band(65, 75, 75, 75, 75) },
 };
 
-/** Mifflin-St Jeor resting energy, in kcal/day. Non-binary uses the midpoint of the two equations. */
-export function restingCalories(profile: Profile, today: string): number {
-  const sexTerm = profile.sex === "male" ? 5 : profile.sex === "female" ? -161 : -78;
-  return 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profileAge(profile, today) + sexTerm;
-}
+// Tolerable Upper Intake Levels (food plus supplements). Vitamin A's applies
+// only to preformed vitamin A, which the food data doesn't separate, so it
+// isn't flagged.
+const UPPER_LIMITS: Partial<Record<NutrientKey, ByBand>> = {
+  calcium: band(3000, 2500, 2500, 2000, 2000),
+  iron: band(45, 45, 45, 45, 45),
+  vitaminC: band(1800, 2000, 2000, 2000, 2000),
+};
 
-export function activityFactor(profile: Profile): number {
-  return ACTIVITY_OPTIONS.find((option) => option.value === profile.activity)!.factor;
-}
-
-/** Estimated calories to maintain current weight, rounded to 10 kcal. */
-export function maintenanceCalories(profile: Profile, today: string): number {
-  return roundTo(restingCalories(profile, today) * activityFactor(profile), 10);
-}
-
-function roundTo(value: number, step: number): number {
-  return Math.round(value / step) * step;
-}
-
-/** A micronutrient target for this person. Non-binary takes the higher of the two, so needs are covered. */
-function micronutrient(key: keyof typeof MICRONUTRIENTS, profile: Profile, age: number): number {
+/** A micronutrient target. Non-binary takes the higher of the two, so needs are covered. */
+function micronutrient(key: keyof typeof MICRONUTRIENTS, profile: Profile, age: number): Target {
   const values = MICRONUTRIENTS[key];
   const group = ageBand(age);
-  if (profile.sex === "male") return values.male[group];
-  if (profile.sex === "female") return values.female[group];
-  return Math.max(values.male[group], values.female[group]);
+  const min =
+    profile.sex === "male"
+      ? values.male[group]
+      : profile.sex === "female"
+        ? values.female[group]
+        : Math.max(values.male[group], values.female[group]);
+  const upper = UPPER_LIMITS[key]?.[group];
+  return upper ? { kind: "min", min, upper } : { kind: "min", min };
+}
+
+/** Protein in grams per kg of body weight: RDA floor (higher after 65), DGA/ACSM ceiling. */
+export function proteinPerKg(profile: Profile, age: number): { min: number; max: number } {
+  const active = profile.activity === "moderate" || profile.activity === "very";
+  const min = age <= 18 ? 0.85 : age >= 65 ? (active ? 1.2 : 1.0) : 0.8;
+  const max = profile.activity === "very" ? 2.0 : 1.6;
+  return { min, max };
 }
 
 export function computeTargets(profile: Profile, today: string): Targets {
   const kcal = maintenanceCalories(profile, today);
   const age = profileAge(profile, today);
-  const proteinRda = age <= 18 ? 0.85 : 0.8;
+  const teen = age <= 18;
+  const perKg = proteinPerKg(profile, age);
+  const proteinMin = Math.round(perKg.min * profile.weightKg);
+  // Never above the AMDR ceiling: 35% of calories (30% at 14–18).
+  const proteinMax = Math.max(
+    proteinMin,
+    Math.round(Math.min(perKg.max * profile.weightKg, (kcal * (teen ? 0.3 : 0.35)) / 4)),
+  );
+
+  let calories: Target = { kind: "range", min: roundTo(kcal * 0.9, 10), max: roundTo(kcal * 1.1, 10) };
+  if (profile.sex === "nonbinary") {
+    // A range spanning the female and male estimates, at least 10% either side.
+    const female = energyRequirement("female", profile, today);
+    const male = energyRequirement("male", profile, today);
+    calories = {
+      kind: "range",
+      min: roundTo(Math.min(female, male, kcal * 0.9), 10),
+      max: roundTo(Math.max(female, male, kcal * 1.1), 10),
+    };
+  }
 
   return {
-    calories: { kind: "range", min: roundTo(kcal * 0.9, 10), max: roundTo(kcal * 1.1, 10) },
-    protein: {
-      kind: "range",
-      min: Math.round(Math.max((kcal * 0.1) / 4, proteinRda * profile.weightKg)),
-      max: Math.round((kcal * 0.35) / 4),
-    },
-    carbs: { kind: "range", min: Math.round((kcal * 0.45) / 4), max: Math.round((kcal * 0.65) / 4) },
-    fat: { kind: "range", min: Math.round((kcal * 0.2) / 9), max: Math.round((kcal * 0.35) / 9) },
+    calories,
+    protein: { kind: "range", min: proteinMin, max: proteinMax },
+    carbs: { kind: "range", min: Math.max(Math.round((kcal * 0.45) / 4), 130), max: Math.round((kcal * 0.65) / 4) },
+    fat: { kind: "range", min: Math.round((kcal * (teen ? 0.25 : 0.2)) / 9), max: Math.round((kcal * 0.35) / 9) },
     fiber: { kind: "min", min: Math.round((kcal / 1000) * 14) },
     sodium: { kind: "max", max: 2300 },
-    potassium: { kind: "min", min: micronutrient("potassium", profile, age) },
-    calcium: { kind: "min", min: micronutrient("calcium", profile, age) },
-    iron: { kind: "min", min: micronutrient("iron", profile, age) },
-    vitaminA: { kind: "min", min: micronutrient("vitaminA", profile, age) },
-    vitaminC: { kind: "min", min: micronutrient("vitaminC", profile, age) },
+    potassium: micronutrient("potassium", profile, age),
+    calcium: micronutrient("calcium", profile, age),
+    iron: micronutrient("iron", profile, age),
+    vitaminA: micronutrient("vitaminA", profile, age),
+    vitaminC: micronutrient("vitaminC", profile, age),
   };
 }
 
@@ -119,31 +199,37 @@ function groupName(profile: Profile, age: number): string {
 export function explainTarget(key: NutrientKey, profile: Profile, targets: Targets, today: string): string {
   const kcal = maintenanceCalories(profile, today);
   const age = profileAge(profile, today);
-  const resting = formatAmount(Math.round(restingCalories(profile, today)));
-  const activity = ACTIVITY_OPTIONS.find((option) => option.value === profile.activity)!;
+  const activity = ACTIVITY_OPTIONS.find((option) => option.value === profile.activity)!.label.toLowerCase();
   const kcalText = `${formatAmount(kcal)} kcal`;
-  const nonbinary = profile.sex === "nonbinary";
+  const target = targets[key];
+  const unit = NUTRIENTS[key].unit;
 
   switch (key) {
-    case "calories":
-      return `Your maintenance estimate is ${kcalText}: a resting rate of ${resting} kcal (Mifflin-St Jeor equation${
-        nonbinary ? ", midway between the female and male versions" : ""
-      }) × ${activity.factor} for ${activity.label.toLowerCase()}. The range is 10% either side.`;
-    case "protein":
-      return `10–35% of your ${kcalText}, and never below ${age <= 18 ? 0.85 : 0.8} g per kg of body weight (${Math.round(
-        (age <= 18 ? 0.85 : 0.8) * profile.weightKg,
-      )} g for you).`;
+    case "calories": {
+      const who = profile.sex === "nonbinary" ? "the female and male equations, averaged" : `the ${profile.sex} equation`;
+      return `Your maintenance estimate is ${kcalText}, from the National Academies’ 2023 energy equations (${who}, ${activity}, using your age, height and weight). These estimates are usually within about 10%, so the range allows for that. The real test is that your weight stays steady.`;
+    }
+    case "protein": {
+      const perKg = proteinPerKg(profile, age);
+      const older = age >= 65 ? ", the higher amount suggested for adults over 65" : "";
+      return `At least ${perKg.min} g per kg of body weight (${target.min} g for you)${older}, up to ${perKg.max} g per kg (${target.max} g). The 2025–2030 Dietary Guidelines suggest aiming for 1.2–1.6 g per kg.`;
+    }
     case "carbs":
-      return `45–65% of your ${kcalText}, at 4 kcal per gram.`;
+      return `45–65% of your ${kcalText}, at 4 kcal per gram, and at least 130 g, the daily minimum the brain needs.`;
     case "fat":
-      return `20–35% of your ${kcalText}, at 9 kcal per gram.`;
+      return `${age <= 18 ? "25" : "20"}–35% of your ${kcalText}, at 9 kcal per gram.`;
     case "fiber":
-      return `14 g for every 1,000 kcal you eat, so ${targets.fiber.min} g at ${kcalText}.`;
+      return `14 g for every 1,000 kcal you eat (the National Academies’ Adequate Intake), so ${target.min} g at ${kcalText}.`;
     case "sodium":
-      return "Under 2,300 mg a day, the U.S. Dietary Guidelines limit for adults.";
-    default:
-      return `The Recommended Dietary Allowance for ${groupName(profile, age)}${
-        key === "potassium" ? " (an Adequate Intake, since there's no RDA)" : ""
-      }${nonbinary ? ", using the higher of the female and male values so your needs are covered" : ""}.`;
+      return "Under 2,300 mg a day, the limit set by the National Academies and the 2025–2030 Dietary Guidelines. There’s no minimum to hit.";
+    default: {
+      const basis = key === "potassium" ? "Adequate Intake" : "Recommended Dietary Allowance";
+      const nonbinary = profile.sex === "nonbinary" ? ", using the higher of the female and male values so your needs are covered" : "";
+      const upper = target.upper
+        ? ` More than ${formatAmount(target.upper)} ${unit} a day, usually from supplements, is above the safe upper limit.`
+        : "";
+      const kidney = key === "potassium" ? " If you have kidney disease, ask your doctor, as this may not apply." : "";
+      return `The ${basis} for ${groupName(profile, age)}${nonbinary}.${upper}${kidney}`;
+    }
   }
 }

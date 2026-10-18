@@ -24,11 +24,13 @@ export const SEX_OPTIONS: { value: Sex; label: string }[] = [
   { value: "nonbinary", label: "Non-binary" },
 ];
 
-export const ACTIVITY_OPTIONS: { value: Activity; label: string; description: string; factor: number }[] = [
-  { value: "sedentary", label: "Mostly sitting", description: "Desk job, little exercise", factor: 1.2 },
-  { value: "light", label: "Lightly active", description: "Light exercise or walks 1–3 days a week", factor: 1.375 },
-  { value: "moderate", label: "Moderately active", description: "Exercise 3–5 days a week", factor: 1.55 },
-  { value: "very", label: "Very active", description: "Hard exercise 6–7 days a week", factor: 1.725 },
+// The National Academies' four activity levels (inactive, low active, active,
+// very active), described with their example activities for adults.
+export const ACTIVITY_OPTIONS: { value: Activity; label: string; description: string }[] = [
+  { value: "sedentary", label: "Mostly sitting", description: "Daily routine and light chores, little exercise" },
+  { value: "light", label: "Lightly active", description: "About an hour of walking most days, or similar" },
+  { value: "moderate", label: "Active", description: "Walking plus regular exercise, like cycling or tennis" },
+  { value: "very", label: "Very active", description: "Hard exercise or a physical job most days, like jogging" },
 ];
 
 export const CM_PER_INCH = 2.54;

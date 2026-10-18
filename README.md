@@ -48,7 +48,7 @@ flowchart LR
 ## How it works
 
 - **No account.** Everything is saved in your browser (`localStorage`), so it remembers you on the device you used.
-- **Targets** are estimates for maintaining your weight (Mifflin-St Jeor plus standard dietary guidelines), not medical advice.
+- **Targets** are estimates for maintaining your weight (National Academies equations and dietary guidelines; sources in `research/nutrition-targets.md`), not medical advice.
 - **A rolling 7-day window.** Each nutrient is judged on its average over the last 7 complete days, not fixed Monday–Sunday weeks. One day out of range isn't a miss; today's bars are a guide. Today counts once you mark it complete (or at midnight), and unlogged days are left out, not counted as zero.
 - **The first week unlocks in stages:** averages after your first complete day, suggestions after 3, a full window on day 7, and a weekend vs. weekday trend after about two weeks.
 - **Logging** needs a food name, calories, protein, carbs and fat. The other nutrients are optional, and the built-in common foods fill them all in.

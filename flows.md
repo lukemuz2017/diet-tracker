@@ -96,10 +96,10 @@ Every nutrient is judged on its 7-day average; the same target is shown as a dai
 
 | Nutrient | Kind | Target (adults, per day) |
 |---|---|---|
-| Calories | range | maintenance (Mifflin-St Jeor × activity) ±10% |
-| Protein | range | 10–35% of calories, at least 0.8 g per kg |
-| Carbs | range | 45–65% of calories |
-| Fat | range | 20–35% of calories |
+| Calories | range | maintenance (National Academies 2023 energy equations) ±10% |
+| Protein | range | 0.8–1.6 g per kg (higher minimum at 18 and 65+, 2.0 max if very active) |
+| Carbs | range | 45–65% of calories, at least 130 g |
+| Fat | range | 20–35% of calories (25–35% at 18) |
 | Fiber | minimum | 14 g per 1,000 kcal |
 | Sodium | limit | under 2,300 mg |
 | Potassium | minimum | 3,400 mg (M) / 2,600 mg (F) |

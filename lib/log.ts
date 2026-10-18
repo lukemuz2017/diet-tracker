@@ -93,6 +93,9 @@ export function statusFor(key: NutrientKey, target: Target, value: number | unde
   if ((target.kind === "range" || target.kind === "max") && value > target.max!) {
     return { kind: "over", text: `Over by ${formatValue(value - target.max!)} ${unit}` };
   }
+  if (target.upper !== undefined && value > target.upper) {
+    return { kind: "over", text: "Above safe upper limit" };
+  }
   return { kind: "in-range", text: target.kind === "max" ? "Under limit" : "In range" };
 }
 

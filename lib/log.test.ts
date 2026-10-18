@@ -43,6 +43,7 @@ test("statuses say where a value stands, and going over a minimum is fine", () =
   assert.deepEqual(statusFor("sodium", { kind: "max", max: 2300 }, 2600), { kind: "over", text: "Over by 300 mg" });
   assert.deepEqual(statusFor("sodium", { kind: "max", max: 2300 }, 1800), { kind: "in-range", text: "Under limit" });
   assert.equal(statusFor("iron", { kind: "min", min: 8 }, undefined).kind, "unknown");
+  assert.deepEqual(statusFor("iron", { kind: "min", min: 8, upper: 45 }, 50), { kind: "over", text: "Above safe upper limit" });
 });
 
 test("recent foods are distinct and newest first", () => {
