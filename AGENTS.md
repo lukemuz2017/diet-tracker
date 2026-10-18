@@ -59,7 +59,7 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
   - BMR = 10 × kg + 6.25 × cm − 5 × age, then +5 (male) or −161 (female).
   - Activity factors: 1.2 sedentary, 1.375 lightly active, 1.55 moderately active, 1.725 very active.
 - **Macros:** Acceptable Macronutrient Distribution Ranges converted to grams at 4 / 4 / 9 kcal per gram (protein / carbs / fat). Protein never goes below 0.8 g per kg of body weight.
-- **Timescales:** calories, macros, fiber, added sugar and sodium are judged daily. Potassium, calcium, iron, vitamin A and vitamin C are judged on the weekly average.
+- **Timescales:** being revised. Every nutrient will be judged on a rolling 7-day average, with daily ranges as a guide (see the decisions log). The old split (macros daily, vitamins and minerals weekly) is superseded.
 - **Unknown values:** only food name, date, calories, protein, carbs and fat are required. A blank optional nutrient is unknown, not zero, and summaries say how many foods they're based on.
 - **Common foods:** a static, bundled list (about 40 foods) with all 12 nutrients per standard serving. Values come from USDA FoodData Central, cited in the data file.
 
@@ -79,4 +79,9 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
   - "Log weekly" means catching up on past days. The log form's date defaults to today.
   - Extras kept: common-foods quick add, recent foods in one tap, missed-day nudge, edit and delete with undo.
   - Routes: `/`, `/setup`, `/targets`, `/today`, `/log`, `/week`. Shared nav: Today · Log · Week · Targets.
-- Next: step 3, onboarding research on three similar tools (e.g. Cronometer, MyFitnessPal, MacroFactor), before building any screens.
+- 2026-10-18 (onboarding research, step 3): studied MyFitnessPal, MyNetDiary and Noom (`research/onboarding-research.md`). Borrowing:
+  - First visit: "why we ask" hints on sensitive setup fields; ⓘ info buttons on the ranges page that explain each range and its calculation (not always on screen); an inline "First food logged" message.
+  - Logging: one-tap add with Undo and remembered serving size; bars show grams and what's left (going over a minimum is never red); "what it adds" tags instead of good/bad colors.
+  - Coming back: suggestions with a one-tap fix; mark a day complete (half-logged days are flagged and left out of averages); weekend vs. weekday trend; days logged instead of streaks.
+  - Not chosen for now: copy yesterday's food.
+- 2026-10-18 (student's idea): judge nutrients on a **rolling 7-day window** (today and the 6 days before), not Monday–Sunday weeks. Daily ranges stay as a guide. Details pending: when today counts, how suggestions refresh, how the first week works.
