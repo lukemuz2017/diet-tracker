@@ -1,26 +1,52 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Market Stand tokens. See design.md for roles and checked contrast. */
+@theme {
+  --color-celery: #eef2e4;
+  --color-paper: #fbfcf7;
+  --color-soil: #1f2a1c;
+  --color-muted: #4a5545;
+  --color-leaf: #2e6b3f;
+  --color-leaf-dark: #245733;
+  --color-leaf-tint: #dce8d0;
+  --color-tomato: #c8402a;
+  --color-lemon: #f2c94c;
+  --color-lemon-tint: #fbefc4;
+  --color-kraft: #c9a27a;
+  --color-line: #dde5cf;
+  --color-track: #e1e8d6;
+  --color-band: #b9d3a8;
+  --color-field: #b8c4a8;
+
+  --radius-field: 10px;
+  --radius-card: 18px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bricolage), "Arial Black", sans-serif;
+  --font-sans: var(--font-atkinson), Verdana, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background: var(--color-celery);
+    color: var(--color-soil);
+  }
+
+  /* Two-ring focus: the outline offset shows the surface color between
+     the element and the soil ring. */
+  :focus-visible {
+    outline: 3px solid var(--color-soil);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Inputs sit inside a bordered box (for units like "lb"), so the box shows
+   the focus ring instead of the input. */
+.field-box:has(input:focus-visible) {
+  outline: 3px solid var(--color-soil);
+  outline-offset: 2px;
+}
+.field-box input:focus-visible {
+  outline: none;
 }
