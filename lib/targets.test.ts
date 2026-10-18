@@ -35,10 +35,9 @@ test("age comes from the birth date and updates on the birthday", () => {
   assert.equal(restingCalories(born, TODAY) - restingCalories(man, TODAY), 5);
 });
 
-test("fiber, added sugar and sodium scale or stay fixed as specified", () => {
+test("fiber scales with calories and sodium stays fixed", () => {
   const t = computeTargets(man, TODAY);
   assert.deepEqual(t.fiber, { kind: "min", min: 36 }); // 2.56 × 14
-  assert.deepEqual(t.addedSugar, { kind: "max", max: 64 }); // 10% of 2,560 / 4
   assert.deepEqual(t.sodium, { kind: "max", max: 2300 });
 });
 

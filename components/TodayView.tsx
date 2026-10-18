@@ -15,7 +15,7 @@ import { useSavedData, type Entry } from "@/lib/storage";
 import { computeTargets } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
 
-const DAILY_BARS: NutrientKey[] = ["protein", "carbs", "fat", "fiber", "addedSugar", "sodium"];
+const DAILY_BARS: NutrientKey[] = ["protein", "carbs", "fat", "fiber", "sodium"];
 const WEEKLY_BARS: NutrientKey[] = ["potassium", "calcium", "iron", "vitaminA", "vitaminC"];
 const PICK_TONES: StickerTone[] = ["lemon", "lemon", "paper", "leaf", "kraft", "paper"];
 

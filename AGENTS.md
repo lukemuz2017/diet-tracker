@@ -64,7 +64,7 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
 - **Macros:** Acceptable Macronutrient Distribution Ranges converted to grams at 4 / 4 / 9 kcal per gram (protein / carbs / fat). Protein never goes below 0.8 g per kg of body weight.
 - **Rolling 7-day window:** every nutrient is judged on its average over today and the 6 days before; daily ranges are only a guide. The full rules (complete days, the 40% "looks incomplete" threshold, first-week stages, the 14-day weekend trend) are in `flows.md` under "How the 7-day window works". Keep this logic in pure functions in `lib/`.
 - **Unknown values:** only food name, date, calories, protein, carbs and fat are required. A blank optional nutrient is unknown, not zero, and summaries say how many foods they're based on.
-- **Common foods:** a static, bundled list (about 40 foods) with all 12 nutrients per standard serving. Values come from USDA FoodData Central, cited in the data file.
+- **Common foods:** a static, bundled list (about 40 foods) with all 11 nutrients per standard serving. Values come from USDA FoodData Central, cited in the data file.
 
 ## Code conventions
 
@@ -99,4 +99,5 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
 - 2026-10-18 (build): foundation done (theme, shared components, nav, route stubs). First visit done: setup form with validation, target math with tests, "Your ranges" with ⓘ explanations, saving, and redirects (welcome ↔ Today; nav only after setup). Ages 19–100 only, because the RDA tables used start at 19.
 - 2026-10-18 (student): setup asks for date of birth (ages 18–100, checked to the day) instead of age, and adds a non-binary option (calories: midpoint of the female and male Mifflin-St Jeor equations; vitamins and minerals: the higher value). The welcome screen is an animated card (pop-in, stickers dropping on; still for reduced motion) with three steps and Get started.
 - 2026-10-18 (build): logging done. 41 common foods from USDA FoodData Central (`lib/foods-data.ts`, fdcId on each); "what it adds" tags use the FDA good-source rule (≥10% Daily Value); Add food has date (catch-up), search, recent foods, common foods by category and a custom-food form; Today has calorie and nutrient bars, vitamins and minerals (collapsed), foods with servings and Remove, Undo messages that pause on hover or focus, Mark day complete, and the first-food note.
+- 2026-10-18 (student): removed added sugar as a tracked nutrient. 11 nutrients now: calories, protein, carbs, fat, fiber, sodium, potassium, calcium, iron, vitamin A, vitamin C.
 - Next: the 7-day window (Last 7 days page, suggestions with one-tap fixes, weekend trend, missed-day and looks-incomplete nudges), sample data, then deploy and the first-run check.

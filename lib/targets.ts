@@ -88,7 +88,6 @@ export function computeTargets(profile: Profile, today: string): Targets {
     carbs: { kind: "range", min: Math.round((kcal * 0.45) / 4), max: Math.round((kcal * 0.65) / 4) },
     fat: { kind: "range", min: Math.round((kcal * 0.2) / 9), max: Math.round((kcal * 0.35) / 9) },
     fiber: { kind: "min", min: Math.round((kcal / 1000) * 14) },
-    addedSugar: { kind: "max", max: Math.round((kcal * 0.1) / 4) },
     sodium: { kind: "max", max: 2300 },
     potassium: { kind: "min", min: micronutrient("potassium", profile, age) },
     calcium: { kind: "min", min: micronutrient("calcium", profile, age) },
@@ -140,8 +139,6 @@ export function explainTarget(key: NutrientKey, profile: Profile, targets: Targe
       return `20–35% of your ${kcalText}, at 9 kcal per gram.`;
     case "fiber":
       return `14 g for every 1,000 kcal you eat, so ${targets.fiber.min} g at ${kcalText}.`;
-    case "addedSugar":
-      return `Under 10% of your ${kcalText}, at 4 kcal per gram. This counts sugar added to food, not the sugar in fruit or milk.`;
     case "sodium":
       return "Under 2,300 mg a day, the U.S. Dietary Guidelines limit for adults.";
     default:

@@ -90,7 +90,7 @@ Shared navigation, shown once setup is done: **Today · Log · Last 7 days · Ta
 
 ## What's tracked
 
-The log form always shows food name, date, calories, protein, carbs and fat. The other eight nutrients are optional, under "More nutrients"; a blank means *unknown*, not zero, and averages say how many foods they're based on. Quick-add foods fill in all twelve, and carry "what it adds" tags (e.g. protein, fiber, vitamin C) instead of good/bad colors. On bars, going over a minimum is never shown in red.
+The log form always shows food name, date, calories, protein, carbs and fat. The other seven nutrients are optional, under "More nutrients"; a blank means *unknown*, not zero, and averages say how many foods they're based on. Quick-add foods fill in all eleven, and carry "what it adds" tags (e.g. protein, fiber, vitamin C) instead of good/bad colors. On bars, going over a minimum is never shown in red.
 
 Every nutrient is judged on its 7-day average; the same target is shown as a daily guide on Today.
 
@@ -101,7 +101,6 @@ Every nutrient is judged on its 7-day average; the same target is shown as a dai
 | Carbs | range | 45–65% of calories |
 | Fat | range | 20–35% of calories |
 | Fiber | minimum | 14 g per 1,000 kcal |
-| Added sugar | limit | under 10% of calories |
 | Sodium | limit | under 2,300 mg |
 | Potassium | minimum | 3,400 mg (M) / 2,600 mg (F) |
 | Calcium | minimum | 1,000 mg (1,200 for women 51+ and men 71+) |
