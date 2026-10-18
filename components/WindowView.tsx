@@ -81,11 +81,14 @@ export function WindowView({
             <b>{formatDay(day.date)} looks incomplete</b> ({Math.round(day.totals.calories ?? 0).toLocaleString("en-US")}{" "}
             kcal logged), so it’s left out of the averages.
           </span>
-          <span className="flex flex-wrap gap-x-4">
-            <Link href={`/log?date=${day.date}`} className="font-bold text-leaf underline underline-offset-[3px]">
+          <span className="flex flex-wrap items-center gap-x-5">
+            <Link
+              href={`/log?date=${day.date}`}
+              className="inline-flex min-h-11 items-center text-sm font-bold text-leaf underline underline-offset-[3px] hover:text-soil"
+            >
               Add food
             </Link>
-            <Button variant="quiet" className="min-h-0 px-0" onClick={() => setDayComplete(day.date, true)}>
+            <Button variant="quiet" className="px-0" onClick={() => setDayComplete(day.date, true)}>
               Mark complete
             </Button>
           </span>
