@@ -56,7 +56,7 @@ export function WeekPanel({ data, profile, end, today }: { data: SavedData; prof
         className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-card px-5 py-4 text-left hover:bg-track/40"
       >
         <span className="flex flex-col">
-          <span className="font-display text-xl font-extrabold">Your 7 days</span>
+          <span className="font-display text-xl font-extrabold">Dietary stats</span>
           <span className="text-sm text-muted">
             {formatDay(summary.start)} – {formatDay(summary.end)} · {summary.counted} complete
           </span>

@@ -50,8 +50,8 @@ Shared navigation, shown once setup is done: **Food log · History · Targets**,
 | `/` | Welcome card when nothing is saved; goes to the Food log once you're set up |
 | `/setup` | Your details: units, height, weight, date of birth, sex (female, male, non-binary), activity level. Reused, prefilled, to edit them later |
 | `/targets` | Your ranges, each with an ⓘ explanation of how it was calculated |
-| `/log` | **Food log.** Pick today or any of the 6 days before; a Mark day complete toggle sits beside the picker. A collapsible **Your 7 days** panel shows the 7 days ending on the picked day: a one-line summary closed; the day strip, half-logged days to fix and each nutrient's 7-day average as a bar against its target when open. Left: that day's totals (no targets) and foods. Right: one Add food button that opens a search with a Foods / Meals & recipes toggle |
-| `/week` | Old address; forwards to `/log` (Last 7 days is the Your 7 days panel now) |
+| `/log` | **Food log.** Pick today or any of the 6 days before; a Mark day complete toggle sits beside the picker. A collapsible **Dietary stats** panel shows the 7 days ending on the picked day: a one-line summary closed; the day strip, half-logged days to fix and each nutrient's 7-day average as a bar against its target when open. Left: that day's totals (no targets) and foods. Right: one Add food button that opens a search with a Foods / Meals & recipes toggle |
+| `/week` | Old address; forwards to `/log` (Last 7 days is the Dietary stats panel now) |
 | `/history` | Pick any day to see the same view for the 7 days ending on it |
 | `/recipes` | Paste a recipe (reads its per-serving nutrition panel) or build one from ingredients; saved recipes are logged by the serving |
 | `/today` | Old address; forwards to `/log` |
