@@ -1,11 +1,12 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { CaloriesByDay, MacroSplit } from "@/components/HistoryCharts";
 import { NutrientBar } from "@/components/NutrientBar";
 import { Card } from "@/components/ui/Card";
 import { formatDay } from "@/lib/dates";
+import { NUTRIENT_KEYS, statusFor } from "@/lib/log";
 import { NUTRIENT_GROUPS } from "@/lib/nutrients";
-import type { Profile } from "@/lib/profile";
+import { profileAge, type Profile } from "@/lib/profile";
 import type { SavedData } from "@/lib/storage";
 import { computeTargets, maintenanceCalories } from "@/lib/targets";
 import { summarizeWindow, type DayState } from "@/lib/week";
@@ -24,52 +25,54 @@ const STATE_LABEL: Record<DayState, string> = {
 };
 
 /**
- * The 7 days ending on `end`: which days count (the day strip) and the
- * averages against targets. `compact` drops the cards and heading, for use
- * inside another view.
+ * The 7 days ending on `end`: a score card ("X of 11 nutrients in range",
+ * days logged, the day strip), then either each nutrient's bar against its
+ * target ("bars", for This week) or high-level charts ("charts", for History).
  */
 export function WindowView({
   data,
   profile,
   end,
   today,
-  compact = false,
-  headline,
+  detail = "bars",
 }: {
   data: SavedData;
   profile: Profile;
   end: string;
   today: string;
-  compact?: boolean;
-  /** Replaces the date-range heading on the day-strip card (e.g. "7 of 11 nutrients in range"). */
-  headline?: ReactNode;
+  detail?: "bars" | "charts";
 }) {
   const targets = computeTargets(profile, today);
   const summary = summarizeWindow(data, end, today, maintenanceCalories(profile, today), targets);
-  const Box = compact ? "section" : Card;
+  const counts = { "in-range": 0, "to-go": 0, over: 0 };
+  if (summary.counted > 0) {
+    for (const key of NUTRIENT_KEYS) {
+      const kind = statusFor(key, targets[key], summary.averages[key]).kind;
+      if (kind !== "unknown") counts[kind] += 1;
+    }
+  }
 
   return (
-    <div className={compact ? "flex flex-col gap-5" : "flex max-w-3xl flex-col gap-5"}>
-      <Box className="flex flex-col gap-4">
-        {headline ? (
-          <div className="flex flex-col gap-1">
-            {headline}
-            <span className="text-[15px] text-muted">
-              {summary.logged} of 7 days logged · {summary.counted} complete
-            </span>
-          </div>
-        ) : (
-          !compact && (
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-display text-xl font-extrabold">
-                {formatDay(summary.start)} – {formatDay(summary.end)}
-              </h2>
-              <span className="text-[15px] text-muted">
-                {summary.logged} of 7 days logged · {summary.counted} complete
+    <div className="flex max-w-3xl flex-col gap-5">
+      <Card className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-[26px] font-extrabold leading-tight">
+              {summary.counted > 0 ? `${counts["in-range"]} of ${NUTRIENT_KEYS.length} nutrients in range` : "No complete days yet"}
+            </h2>
+            {summary.counted > 0 && (
+              <span className="flex flex-wrap gap-2 text-[13px] font-bold">
+                <span className="rounded-full bg-leaf px-2.5 py-0.5 text-white">{counts["in-range"]} in range</span>
+                <span className="rounded-full bg-lemon px-2.5 py-0.5 text-soil">{counts["to-go"]} to go</span>
+                {counts.over > 0 && <span className="rounded-full bg-soil px-2.5 py-0.5 text-paper">{counts.over} over</span>}
               </span>
-            </div>
-          )
-        )}
+            )}
+          </div>
+          <span className="text-[15px] text-muted">
+            {detail === "charts" && `${formatDay(summary.start)} – ${formatDay(summary.end)} · `}
+            {summary.logged} of 7 days logged · {summary.counted} complete
+          </span>
+        </div>
         <ol className="grid grid-cols-7 gap-1.5 text-center text-xs text-muted">
           {summary.days.map((day) => (
             <li key={day.date} className="flex flex-col items-center gap-1">
@@ -82,27 +85,30 @@ export function WindowView({
           ))}
         </ol>
         <p className="text-xs text-muted">Filled: complete · Yellow: looks incomplete · Ring: not logged · Dashed: in progress</p>
-      </Box>
+      </Card>
 
-      {summary.counted === 0 ? (
-        <Box>
+      {detail === "charts" ? (
+        <>
+          {summary.logged > 0 && <CaloriesByDay summary={summary} target={targets.calories} />}
+          {summary.counted > 0 && <MacroSplit averages={summary.averages} teen={profileAge(profile, today) <= 18} />}
+        </>
+      ) : summary.counted === 0 ? (
+        <Card>
           <p className="text-[15px]">
             {end === today
               ? "Your 7-day balance starts when you finish your first day. Mark today complete on the Foods tab, or come back tomorrow."
               : "No complete days in this week."}
           </p>
-        </Box>
+        </Card>
       ) : (
-        <div className={compact ? "grid gap-x-8 gap-y-6 lg:grid-cols-2" : "flex flex-col gap-5"}>
-        {NUTRIENT_GROUPS.map((group) => (
-          <Box key={group.title} className="flex flex-col gap-5">
+        NUTRIENT_GROUPS.map((group) => (
+          <Card key={group.title} className="flex flex-col gap-5">
             <h2 className="font-display text-xl font-extrabold">{group.title}</h2>
             {group.keys.map((key) => (
               <NutrientBar key={key} nutrient={key} target={targets[key]} value={summary.averages[key]} />
             ))}
-          </Box>
-        ))}
-        </div>
+          </Card>
+        ))
       )}
 
       {summary.counted > 0 && summary.counted < 3 && (

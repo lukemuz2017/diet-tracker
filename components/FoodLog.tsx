@@ -12,12 +12,12 @@ import { changeServings, removeEntry, setDayComplete } from "@/lib/actions";
 import { multipleFor, quantityFor } from "@/lib/amounts";
 import { addDays, formatDay } from "@/lib/dates";
 import { amountFor } from "@/lib/foods";
-import { NUTRIENT_KEYS, formatValue, statusFor, totalsFor } from "@/lib/log";
+import { formatValue, totalsFor } from "@/lib/log";
 import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { useSavedData, type Entry, type SavedData } from "@/lib/storage";
-import { computeTargets, maintenanceCalories } from "@/lib/targets";
+import { maintenanceCalories } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
-import { INCOMPLETE_SHARE, WINDOW_DAYS, summarizeWindow, type DayState } from "@/lib/week";
+import { INCOMPLETE_SHARE, WINDOW_DAYS, type DayState } from "@/lib/week";
 
 type Tab = "progress" | "foods";
 const TABS: { value: Tab; label: string }[] = [
@@ -154,34 +154,7 @@ function dayName(day: string, today: string): string {
 }
 
 function Progress({ data, today }: { data: SavedData; today: string }) {
-  const profile = data.profile!;
-  const targets = computeTargets(profile, today);
-  const summary = summarizeWindow(data, today, today, maintenanceCalories(profile, today), targets);
-  const counts = { "in-range": 0, "to-go": 0, over: 0 };
-  if (summary.counted > 0) {
-    for (const key of NUTRIENT_KEYS) {
-      const kind = statusFor(key, targets[key], summary.averages[key]).kind;
-      if (kind !== "unknown") counts[kind] += 1;
-    }
-  }
-
-  const headline =
-    summary.counted > 0 ? (
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-[26px] font-extrabold leading-tight">
-          {counts["in-range"]} of {NUTRIENT_KEYS.length} nutrients in range
-        </h2>
-        <span className="flex flex-wrap gap-2 text-[13px] font-bold">
-          <span className="rounded-full bg-leaf px-2.5 py-0.5 text-white">{counts["in-range"]} in range</span>
-          <span className="rounded-full bg-lemon px-2.5 py-0.5 text-soil">{counts["to-go"]} to go</span>
-          {counts.over > 0 && <span className="rounded-full bg-soil px-2.5 py-0.5 text-paper">{counts.over} over</span>}
-        </span>
-      </div>
-    ) : (
-      <h2 className="font-display text-[26px] font-extrabold leading-tight">Your week so far</h2>
-    );
-
-  return <WindowView data={data} profile={profile} end={today} today={today} headline={headline} />;
+  return <WindowView data={data} profile={data.profile!} end={today} today={today} />;
 }
 
 const STATE_CHIP: Record<DayState, { text: string; className: string }> = {

@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { WindowView } from "@/components/WindowView";
 import { PageHeader } from "@/components/ui/Card";
 import { TextField } from "@/components/ui/Field";
-import { addDays } from "@/lib/dates";
 import { useSavedData } from "@/lib/storage";
 import { useToday } from "@/lib/useToday";
 
@@ -17,11 +16,11 @@ export function History() {
   const router = useRouter();
   const requested = useSearchParams().get("end");
   const header = (
-    <PageHeader title="History" description="Pick a day to see the 7 days that ended on it." />
+    <PageHeader title="History" description="Pick a day to see the high-level stats for the 7 days that ended on it." />
   );
   if (!data?.profile || !today) return header;
 
-  const end = requested && ISO_DATE.test(requested) && requested <= today ? requested : addDays(today, -1);
+  const end = requested && ISO_DATE.test(requested) && requested <= today ? requested : today;
 
   return (
     <>
@@ -37,7 +36,7 @@ export function History() {
           className="max-w-xs"
         />
       </div>
-      <WindowView data={data} profile={data.profile} end={end} today={today} />
+      <WindowView data={data} profile={data.profile} end={end} today={today} detail="charts" />
     </>
   );
 }
