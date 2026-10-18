@@ -6,7 +6,7 @@ export type Status = "to-go" | "in-range" | "over" | "unknown";
 const styles: Record<Status, string> = {
   "to-go": "bg-lemon text-soil",
   "in-range": "bg-leaf text-white",
-  over: "bg-tomato text-white",
+  over: "bg-soil text-paper",
   unknown: "border-[1.5px] border-dashed border-muted text-muted",
 };
 

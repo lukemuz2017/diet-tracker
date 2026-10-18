@@ -173,7 +173,7 @@ function Progress({ data, today }: { data: SavedData; today: string }) {
         <span className="flex flex-wrap gap-2 text-[13px] font-bold">
           <span className="rounded-full bg-leaf px-2.5 py-0.5 text-white">{counts["in-range"]} in range</span>
           <span className="rounded-full bg-lemon px-2.5 py-0.5 text-soil">{counts["to-go"]} to go</span>
-          {counts.over > 0 && <span className="rounded-full bg-tomato px-2.5 py-0.5 text-white">{counts.over} over</span>}
+          {counts.over > 0 && <span className="rounded-full bg-soil px-2.5 py-0.5 text-paper">{counts.over} over</span>}
         </span>
       </div>
     ) : (
