@@ -164,23 +164,23 @@ function Progress({ data, today }: { data: SavedData; today: string }) {
     }
   }
 
-  return (
-    <div className="flex flex-col gap-5">
-      {summary.counted > 0 && (
-        <Card className="flex max-w-3xl flex-wrap items-center justify-between gap-4">
-          <p className="font-display text-[28px] font-extrabold leading-tight">
-            {counts["in-range"]} of {NUTRIENT_KEYS.length} nutrients in range
-          </p>
-          <span className="flex flex-wrap gap-2 text-[13px] font-bold">
-            <span className="rounded-full bg-leaf px-2.5 py-0.5 text-white">{counts["in-range"]} in range</span>
-            <span className="rounded-full bg-lemon px-2.5 py-0.5 text-soil">{counts["to-go"]} to go</span>
-            {counts.over > 0 && <span className="rounded-full bg-tomato px-2.5 py-0.5 text-white">{counts.over} over</span>}
-          </span>
-        </Card>
-      )}
-      <WindowView data={data} profile={profile} end={today} today={today} />
-    </div>
-  );
+  const headline =
+    summary.counted > 0 ? (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-[26px] font-extrabold leading-tight">
+          {counts["in-range"]} of {NUTRIENT_KEYS.length} nutrients in range
+        </h2>
+        <span className="flex flex-wrap gap-2 text-[13px] font-bold">
+          <span className="rounded-full bg-leaf px-2.5 py-0.5 text-white">{counts["in-range"]} in range</span>
+          <span className="rounded-full bg-lemon px-2.5 py-0.5 text-soil">{counts["to-go"]} to go</span>
+          {counts.over > 0 && <span className="rounded-full bg-tomato px-2.5 py-0.5 text-white">{counts.over} over</span>}
+        </span>
+      </div>
+    ) : (
+      <h2 className="font-display text-[26px] font-extrabold leading-tight">Your week so far</h2>
+    );
+
+  return <WindowView data={data} profile={profile} end={today} today={today} headline={headline} />;
 }
 
 const STATE_CHIP: Record<DayState, { text: string; className: string }> = {

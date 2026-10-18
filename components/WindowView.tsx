@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { NutrientBar } from "@/components/NutrientBar";
 import { Card } from "@/components/ui/Card";
 import { formatDay } from "@/lib/dates";
@@ -33,12 +34,15 @@ export function WindowView({
   end,
   today,
   compact = false,
+  headline,
 }: {
   data: SavedData;
   profile: Profile;
   end: string;
   today: string;
   compact?: boolean;
+  /** Replaces the date-range heading on the day-strip card (e.g. "7 of 11 nutrients in range"). */
+  headline?: ReactNode;
 }) {
   const targets = computeTargets(profile, today);
   const summary = summarizeWindow(data, end, today, maintenanceCalories(profile, today), targets);
@@ -47,15 +51,24 @@ export function WindowView({
   return (
     <div className={compact ? "flex flex-col gap-5" : "flex max-w-3xl flex-col gap-5"}>
       <Box className="flex flex-col gap-4">
-        {!compact && (
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-display text-xl font-extrabold">
-              {formatDay(summary.start)} – {formatDay(summary.end)}
-            </h2>
+        {headline ? (
+          <div className="flex flex-col gap-1">
+            {headline}
             <span className="text-[15px] text-muted">
               {summary.logged} of 7 days logged · {summary.counted} complete
             </span>
           </div>
+        ) : (
+          !compact && (
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-display text-xl font-extrabold">
+                {formatDay(summary.start)} – {formatDay(summary.end)}
+              </h2>
+              <span className="text-[15px] text-muted">
+                {summary.logged} of 7 days logged · {summary.counted} complete
+              </span>
+            </div>
+          )
         )}
         <ol className="grid grid-cols-7 gap-1.5 text-center text-xs text-muted">
           {summary.days.map((day) => (
