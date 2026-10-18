@@ -7,3 +7,76 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# AGENTS.md
+
+Context for any coding agent working in this repo. Read it before doing anything. When a decision changes, update this file in the same commit.
+
+## What we're building
+
+A diet tracking and planning tool for keeping a **balanced diet**. It is not a weight-loss app: targets are set to *maintain* current weight.
+
+1. **Set up once.** The person enters a few facts about themselves (height, weight, age, sex, activity level). The app estimates maintenance calories and sets target ranges for each tracked nutrient.
+2. **Log food.** They log what they eat each day, or catch up on earlier days of the week. Each day shows where every nutrient stands against its range: under, in range, or over.
+3. **Review the week.** At the end of each week the app summarizes how many days each range was hit and suggests one to three things to focus on next week (e.g. "Protein was under range on 5 of 7 days. Add a protein source at breakfast.").
+
+Working name: TBD. Repo folder: `health-tracker`.
+
+## Project files
+
+- `flows.md`: the three user flows (Mermaid diagram), routes, states and errors, and the table of nutrient targets. It's the source of truth for what the app does.
+- `README.md`: shows the same diagram (keep the two copies in sync), plus the onboarding research and first-run check write-ups.
+- `AGENTS.md`: this file, the only agent context file. If a tool generates `CLAUDE.md`, move anything useful here and delete it.
+
+## Course context
+
+- MPCS 51238 *Design, Build, Ship*, Assignment 3, "Patterns & Flows: An Everyday Tool". Due **Tue Oct 20, 2026, 5:30 PM**. The brief is `Assignment 3 - Patterns & Flows.pdf` in the repo root. It's gitignored, so never commit it.
+- The student directs every change. Don't one-shot features: propose options, let the student choose, then build in small steps. A one-shot submission is marked incomplete.
+- Graded: a working Vercel URL; a page per flow step with shared navigation; the flow diagram in `README.md`; a first visit that's useful right away; form errors next to the field that say what to do and keep what was typed; a reason to come back, with data that persists; keyboard access, real labels, contrast checked; the first-run check feedback in `README.md`; a commit history that shows progress.
+
+## Hard constraints
+
+- **Stack:** Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript, scaffolded with `create-next-app`. Deployed on Vercel's free Hobby plan from the student's own GitHub repo.
+- **Storage:** browser `localStorage` only. No database, no backend or API routes for data, no accounts or sign-in, no external APIs (including nutrition lookup APIs). Data lives on the device the person used; "logging in" just means opening the app.
+- **Dependencies:** add a package only when it's clearly needed, and ask first. Push back on a database, auth, state-management libraries or UI kits.
+- **Dev machine:** Windows. Use `npm` (`npm run dev`, `npm run build`, `npm run lint`).
+
+## Design rules (from the brief)
+
+- **Flows first.** Three flows: first visit, main task (logging food), coming back (weekly review). Each step is its own route; see `flows.md`.
+- **The first visit is the onboarding.** Someone new understands what the tool is for and does something useful right away. Learn by doing: no tours, no dead-end empty screens.
+- **Forms:** one column; a visible `<label>` on every field; errors sit next to the field and say what to do next ("Enter your weight in pounds", not "Invalid input"); never clear what the person typed when there's an error.
+- **Shared components:** buttons, inputs, fields (label + hint + error) and navigation are built once in `components/` and used everywhere.
+- **Navigation:** it's always clear where you are (active nav item, page title) and how to get back.
+- **Accessibility:** everything works with a keyboard and has a visible focus state; real labels; text contrast checked with the agent (WCAG AA: 4.5:1 for body text).
+- **Simplicity:** cut any step, field or tap that doesn't earn its place.
+
+## Domain notes
+
+Targets are estimates for maintaining weight, not medical advice. Say so once in the UI, plainly. The full target table is in `flows.md`.
+
+- **Maintenance calories:** Mifflin-St Jeor BMR × activity factor, shown as a range of ±10%.
+  - BMR = 10 × kg + 6.25 × cm − 5 × age, then +5 (male) or −161 (female).
+  - Activity factors: 1.2 sedentary, 1.375 lightly active, 1.55 moderately active, 1.725 very active.
+- **Macros:** Acceptable Macronutrient Distribution Ranges converted to grams at 4 / 4 / 9 kcal per gram (protein / carbs / fat). Protein never goes below 0.8 g per kg of body weight.
+- **Timescales:** calories, macros, fiber, added sugar and sodium are judged daily. Potassium, calcium, iron, vitamin A and vitamin C are judged on the weekly average.
+- **Unknown values:** only food name, date, calories, protein, carbs and fat are required. A blank optional nutrient is unknown, not zero, and summaries say how many foods they're based on.
+- **Common foods:** a static, bundled list (about 40 foods) with all 12 nutrients per standard serving. Values come from USDA FoodData Central, cited in the data file.
+
+## Code conventions
+
+- `app/` for routes, `components/` for shared UI, `lib/` for pure logic (target math, weekly summaries, suggestions, storage).
+- All `localStorage` access goes through one module (`lib/storage.ts`). Store a `version` field so the saved shape can be migrated. Read only on the client, and handle missing or corrupt data without crashing.
+- Keep target math, weekly summaries and suggestion rules in pure functions so they're easy to check.
+- Commit after each meaningful step, with a message that says what changed and why.
+
+## Decisions log
+
+- 2026-10-17: Tool chosen: a balanced-diet tracker with maintenance targets, daily logging and a weekly review.
+- 2026-10-18 (flow session, in plan mode):
+  - First visit: set up first, then log. Your personal ranges are the first useful thing, followed by a one-tap first log.
+  - Nutrients: calories, protein, carbs, fat, fiber, added sugar, sodium, potassium, calcium, iron, vitamin A, vitamin C. "Sugar" means added sugar, the kind labels list and guidelines cover.
+  - "Log weekly" means catching up on past days. The log form's date defaults to today.
+  - Extras kept: common-foods quick add, recent foods in one tap, missed-day nudge, edit and delete with undo.
+  - Routes: `/`, `/setup`, `/targets`, `/today`, `/log`, `/week`. Shared nav: Today · Log · Week · Targets.
+- Next: step 3, onboarding research on three similar tools (e.g. Cronometer, MyFitnessPal, MacroFactor), before building any screens.
