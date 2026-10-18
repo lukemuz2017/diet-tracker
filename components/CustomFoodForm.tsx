@@ -11,15 +11,17 @@ const UNIT_NAMES = { kcal: "kilocalories", g: "grams", mg: "milligrams", mcg: "m
 // A food that isn't in the list. Only the name and calories are required;
 // anything left blank counts as unknown, not zero.
 export function CustomFoodForm({
+  initialName = "",
   date,
   today,
   onAdd,
 }: {
+  initialName?: string;
   date: string;
   today: string;
   onAdd: (name: string, nutrients: Nutrients) => void;
 }) {
-  const [values, setValues] = useState<CustomFoodValues>(() => emptyCustomFood(date));
+  const [values, setValues] = useState<CustomFoodValues>(() => ({ ...emptyCustomFood(date), name: initialName }));
   const [submitted, setSubmitted] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const current = { ...values, date };
