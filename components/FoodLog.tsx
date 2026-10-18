@@ -56,14 +56,39 @@ export function FoodLog() {
 
   return (
     <div className="max-w-3xl">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <PageHeader title="This week" description={`${formatDay(start)} – ${formatDay(today)}`} />
+      <PageHeader title="This week" description={`${formatDay(start)} – ${formatDay(today)}`} />
+
+      {/* The view toggle and Add food share one row. */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div role="tablist" aria-label="This week" className="flex min-w-0 max-w-md flex-1 gap-1 rounded-full border-[1.5px] border-field bg-white p-1">
+          {TABS.map((item, index) => (
+            <button
+              key={item.value}
+              ref={(element) => {
+                tabRefs.current[index] = element;
+              }}
+              type="button"
+              role="tab"
+              id={`${baseId}-tab-${item.value}`}
+              aria-selected={tab === item.value}
+              aria-controls={`${baseId}-panel-${item.value}`}
+              tabIndex={tab === item.value ? 0 : -1}
+              onClick={() => setTab(item.value)}
+              onKeyDown={(event) => onTabKey(event, index)}
+              className={`min-h-11 flex-1 rounded-full px-5 text-[15px] font-bold ${
+                tab === item.value ? "bg-soil text-paper" : "text-soil hover:bg-track"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
         <button
           type="button"
           aria-expanded={addDate !== null}
           aria-controls={`${baseId}-add`}
           onClick={() => (addDate ? setAddDate(null) : openAdd(today))}
-          className="mb-6 inline-flex min-h-12 items-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
+          className="inline-flex min-h-12 items-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
         >
           <PlusIcon width={20} height={20} strokeWidth={2.25} className={`transition-transform ${addDate ? "rotate-45" : ""}`} />
           {addDate ? "Cancel" : "Add food"}
@@ -100,30 +125,6 @@ export function FoodLog() {
           your 7-day numbers.
         </p>
       )}
-
-      <div role="tablist" aria-label="This week" className="mb-5 flex max-w-md gap-1 rounded-full border-[1.5px] border-field bg-white p-1">
-        {TABS.map((item, index) => (
-          <button
-            key={item.value}
-            ref={(element) => {
-              tabRefs.current[index] = element;
-            }}
-            type="button"
-            role="tab"
-            id={`${baseId}-tab-${item.value}`}
-            aria-selected={tab === item.value}
-            aria-controls={`${baseId}-panel-${item.value}`}
-            tabIndex={tab === item.value ? 0 : -1}
-            onClick={() => setTab(item.value)}
-            onKeyDown={(event) => onTabKey(event, index)}
-            className={`min-h-11 flex-1 rounded-full px-5 text-[15px] font-bold ${
-              tab === item.value ? "bg-soil text-paper" : "text-soil hover:bg-track"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
 
       <div
         role="tabpanel"

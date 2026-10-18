@@ -97,18 +97,9 @@ export function WindowView({
         {NUTRIENT_GROUPS.map((group) => (
           <Box key={group.title} className="flex flex-col gap-5">
             <h2 className="font-display text-xl font-extrabold">{group.title}</h2>
-            {group.keys.map((key) => {
-              const { days, inRange } = summary.coverage[key];
-              return (
-                <NutrientBar
-                  key={key}
-                  nutrient={key}
-                  target={targets[key]}
-                  value={summary.averages[key]}
-                  detail={days > 0 ? `In range on ${inRange} of ${days} ${days === 1 ? "day" : "days"}` : undefined}
-                />
-              );
-            })}
+            {group.keys.map((key) => (
+              <NutrientBar key={key} nutrient={key} target={targets[key]} value={summary.averages[key]} />
+            ))}
           </Box>
         ))}
         </div>
