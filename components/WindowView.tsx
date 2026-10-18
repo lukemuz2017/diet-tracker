@@ -1,10 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { NutrientBar } from "@/components/NutrientBar";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { setDayComplete } from "@/lib/actions";
 import { formatDay } from "@/lib/dates";
 import { NUTRIENT_GROUPS } from "@/lib/nutrients";
 import type { Profile } from "@/lib/profile";
@@ -26,9 +23,9 @@ const STATE_LABEL: Record<DayState, string> = {
 };
 
 /**
- * The 7 days ending on `end`: which days count, averages against targets, and
- * half-logged days to fix. `compact` drops the cards and heading, for use
- * inside the Food log's collapsible panel.
+ * The 7 days ending on `end`: which days count (the day strip) and the
+ * averages against targets. `compact` drops the cards and heading, for use
+ * inside another view.
  */
 export function WindowView({
   data,
@@ -45,7 +42,6 @@ export function WindowView({
 }) {
   const targets = computeTargets(profile, today);
   const summary = summarizeWindow(data, end, today, maintenanceCalories(profile, today), targets);
-  const incomplete = summary.days.filter((day) => day.state === "incomplete");
   const Box = compact ? "section" : Card;
 
   return (
@@ -75,31 +71,11 @@ export function WindowView({
         <p className="text-xs text-muted">Filled: complete · Yellow: looks incomplete · Ring: not logged · Dashed: in progress</p>
       </Box>
 
-      {incomplete.map((day) => (
-        <div key={day.date} className="flex flex-col gap-2 rounded-2xl bg-lemon-tint px-4 py-3 text-[15px]">
-          <span>
-            <b>{formatDay(day.date)} looks incomplete</b> ({Math.round(day.totals.calories ?? 0).toLocaleString("en-US")}{" "}
-            kcal logged), so it’s left out of the averages.
-          </span>
-          <span className="flex flex-wrap items-center gap-x-5">
-            <Link
-              href={`/log?date=${day.date}`}
-              className="inline-flex min-h-11 items-center text-sm font-bold text-leaf underline underline-offset-[3px] hover:text-soil"
-            >
-              Add food
-            </Link>
-            <Button variant="quiet" className="px-0" onClick={() => setDayComplete(day.date, true)}>
-              Mark complete
-            </Button>
-          </span>
-        </div>
-      ))}
-
       {summary.counted === 0 ? (
         <Box>
           <p className="text-[15px]">
             {end === today
-              ? "Your 7-day balance starts when you finish your first day. Use Mark day complete at the top, or come back tomorrow."
+              ? "Your 7-day balance starts when you finish your first day. Mark today complete on the Foods tab, or come back tomorrow."
               : "No complete days in this week."}
           </p>
         </Box>

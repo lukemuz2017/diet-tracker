@@ -1,133 +1,272 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { AddFoodPanel } from "@/components/AddFood";
 import { AmountSelect } from "@/components/FoodRow";
-import { WeekPanel } from "@/components/WeekPanel";
+import { WindowView } from "@/components/WindowView";
 import { Button } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
-import { StickerButton, type StickerTone } from "@/components/ui/Sticker";
-import { CheckIcon } from "@/components/ui/icons";
-import { addFood, changeServings, removeEntry, setDayComplete } from "@/lib/actions";
-import { formatAmount, multipleFor, quantityFor } from "@/lib/amounts";
-import { addDays, formatDay, weekdayName } from "@/lib/dates";
-import { amountFor, quickPicks } from "@/lib/foods";
-import { formatValue, totalsFor } from "@/lib/log";
+import { CheckIcon, PlusIcon } from "@/components/ui/icons";
+import { changeServings, removeEntry, setDayComplete } from "@/lib/actions";
+import { multipleFor, quantityFor } from "@/lib/amounts";
+import { addDays, formatDay } from "@/lib/dates";
+import { amountFor } from "@/lib/foods";
+import { NUTRIENT_KEYS, formatValue, statusFor, totalsFor } from "@/lib/log";
 import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { useSavedData, type Entry, type SavedData } from "@/lib/storage";
-import { maintenanceCalories } from "@/lib/targets";
+import { computeTargets, maintenanceCalories } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
-import { INCOMPLETE_SHARE, WINDOW_DAYS } from "@/lib/week";
+import { INCOMPLETE_SHARE, WINDOW_DAYS, summarizeWindow, type DayState } from "@/lib/week";
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const PICK_TONES: StickerTone[] = ["lemon", "lemon", "paper", "leaf", "kraft", "paper"];
+type Tab = "progress" | "foods";
+const TABS: { value: Tab; label: string }[] = [
+  { value: "progress", label: "Progress" },
+  { value: "foods", label: "Foods" },
+];
 
-// The Food log: pick a day (today or up to 6 days back), see its totals and
-// foods on the left, and add food to it on the right. Totals have no
-// targets: one day out of range (a dinner out, an event) doesn't matter.
-// The collapsible "Dietary stats" panel judges the 7 days ending on that day.
+// This week, one page with two views (like a profile's segmented tabs):
+// Progress judges the 7-day averages; Foods lists what was eaten each day.
+// "+ Add food" opens a panel to add to any of the 7 days.
 export function FoodLog() {
   const data = useSavedData();
   const today = useToday();
-  const router = useRouter();
-  const requested = useSearchParams().get("date");
-  if (!data?.profile || !today) return <PageHeader title="Food log" />;
+  const requestedTab = useSearchParams().get("tab");
+  const [tab, setTab] = useState<Tab>(requestedTab === "foods" ? "foods" : "progress");
+  const [addDate, setAddDate] = useState<string | null>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const baseId = useId();
+  if (!data?.profile || !today) return <PageHeader title="This week" />;
 
-  const earliest = addDays(today, -(WINDOW_DAYS - 1));
-  const date = requested && ISO_DATE.test(requested) && requested >= earliest && requested <= today ? requested : today;
-  const select = (day: string) => router.replace(day === today ? "/log" : `/log?date=${day}`, { scroll: false });
+  const start = addDays(today, -(WINDOW_DAYS - 1));
   const days = Array.from({ length: WINDOW_DAYS }, (_, i) => addDays(today, -i));
-  const yesterday = addDays(today, -1);
-  const missedYesterday =
-    date === today &&
-    data.entries.some((entry) => entry.date < yesterday) &&
-    !data.entries.some((entry) => entry.date === yesterday);
+  const firstFood = data.entries.length === 1;
+
+  function openAdd(date: string) {
+    setAddDate(date);
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  }
+
+  function onTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    const next = (index + (event.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length;
+    setTab(TABS[next].value);
+    tabRefs.current[next]?.focus();
+  }
 
   return (
     <>
-      <PageHeader
-        title="Food log"
-        description={`${weekdayName(date)}, ${formatDay(date).slice(5)}${date === today ? " (today)" : ""}. Forgot a day? Pick it below and fill it in.`}
-      />
-
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <fieldset>
-          <legend className="sr-only">Day to log</legend>
-          <div className="flex flex-wrap gap-2">
-            {days.map((day) => (
-              <button
-                key={day}
-                type="button"
-                aria-pressed={day === date}
-                onClick={() => select(day)}
-                className={`min-h-11 rounded-full px-4 text-sm font-bold ${
-                  day === date ? "bg-leaf text-white" : "border-[1.5px] border-field bg-white text-soil hover:bg-track"
-                }`}
-              >
-                {day === today ? "Today" : day === yesterday ? "Yesterday" : formatDay(day)}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <CompleteToggle data={data} date={date} today={today} />
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <PageHeader title="This week" description={`${formatDay(start)} – ${formatDay(today)}`} />
+        <button
+          type="button"
+          aria-expanded={addDate !== null}
+          aria-controls={`${baseId}-add`}
+          onClick={() => (addDate ? setAddDate(null) : openAdd(today))}
+          className="mb-6 inline-flex min-h-12 items-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
+        >
+          <PlusIcon width={20} height={20} strokeWidth={2.25} className={`transition-transform ${addDate ? "rotate-45" : ""}`} />
+          {addDate ? "Cancel" : "Add food"}
+        </button>
       </div>
 
-      <WeekPanel data={data} profile={data.profile} end={date} today={today} />
+      {addDate && (
+        <Card id={`${baseId}-add`} className="mb-5 flex flex-col gap-4">
+          <fieldset>
+            <legend className="pb-2 font-display text-xl font-extrabold">Add food to</legend>
+            <div className="flex flex-wrap gap-2">
+              {days.map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  aria-pressed={day === addDate}
+                  onClick={() => setAddDate(day)}
+                  className={`min-h-11 rounded-full px-4 text-sm font-bold ${
+                    day === addDate ? "bg-leaf text-white" : "border-[1.5px] border-field bg-white text-soil hover:bg-track"
+                  }`}
+                >
+                  {dayName(day, today)}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <AddFoodPanel key={addDate} data={data} date={addDate} today={today} />
+        </Card>
+      )}
 
-      {missedYesterday && (
-        <p className="mb-5 max-w-3xl rounded-2xl bg-lemon-tint px-4 py-3 text-[15px]">
-          You didn’t log {weekdayName(yesterday)}.{" "}
-          <button type="button" onClick={() => select(yesterday)} className="font-bold text-leaf underline underline-offset-[3px]">
-            Fill it in now
-          </button>
+      {firstFood && (
+        <p role="status" className="mb-5 rounded-2xl bg-leaf-tint px-4 py-3 text-[15px]">
+          <b>First food logged.</b> When you’re done eating for the day, mark it complete on the Foods tab and it joins
+          your 7-day numbers.
         </p>
       )}
 
-      <div className="grid items-start gap-5 lg:grid-cols-2">
-        <DaySummary data={data} date={date} today={today} />
-        <AddFoodPanel data={data} date={date} today={today} />
+      <div role="tablist" aria-label="This week" className="mb-5 flex max-w-md gap-1 rounded-full border-[1.5px] border-field bg-white p-1">
+        {TABS.map((item, index) => (
+          <button
+            key={item.value}
+            ref={(element) => {
+              tabRefs.current[index] = element;
+            }}
+            type="button"
+            role="tab"
+            id={`${baseId}-tab-${item.value}`}
+            aria-selected={tab === item.value}
+            aria-controls={`${baseId}-panel-${item.value}`}
+            tabIndex={tab === item.value ? 0 : -1}
+            onClick={() => setTab(item.value)}
+            onKeyDown={(event) => onTabKey(event, index)}
+            className={`min-h-11 flex-1 rounded-full px-5 text-[15px] font-bold ${
+              tab === item.value ? "bg-soil text-paper" : "text-soil hover:bg-track"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        role="tabpanel"
+        id={`${baseId}-panel-${tab}`}
+        aria-labelledby={`${baseId}-tab-${tab}`}
+        tabIndex={0}
+        className="rounded-card focus-visible:outline-offset-4"
+      >
+        {tab === "progress" ? (
+          <Progress data={data} today={today} />
+        ) : (
+          <div className="flex flex-col gap-5">
+            {days.map((day) => (
+              <DayCard key={day} data={data} date={day} today={today} onAdd={() => openAdd(day)} />
+            ))}
+          </div>
+        )}
       </div>
     </>
   );
 }
 
-function DaySummary({ data, date, today }: { data: SavedData; date: string; today: string }) {
-  const entries = data.entries.filter((entry) => entry.date === date);
-  const { totals, known, foods } = totalsFor(entries);
-  const firstFood = data.entries.length === 1 && entries.length === 1 && !data.completeDays.includes(date);
+function dayName(day: string, today: string): string {
+  if (day === today) return "Today";
+  if (day === addDays(today, -1)) return "Yesterday";
+  return formatDay(day);
+}
+
+function Progress({ data, today }: { data: SavedData; today: string }) {
+  const profile = data.profile!;
+  const targets = computeTargets(profile, today);
+  const summary = summarizeWindow(data, today, today, maintenanceCalories(profile, today), targets);
+  const counts = { "in-range": 0, "to-go": 0, over: 0 };
+  if (summary.counted > 0) {
+    for (const key of NUTRIENT_KEYS) {
+      const kind = statusFor(key, targets[key], summary.averages[key]).kind;
+      if (kind !== "unknown") counts[kind] += 1;
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
-      {firstFood && (
-        <p role="status" className="rounded-2xl bg-leaf-tint px-4 py-3 text-[15px]">
-          <b>First food logged.</b> When you’re done eating for the day, mark it complete and it joins your 7-day numbers.
-        </p>
+      {summary.counted > 0 && (
+        <Card className="flex max-w-3xl flex-wrap items-center justify-between gap-4">
+          <p className="font-display text-[28px] font-extrabold leading-tight">
+            {counts["in-range"]} of {NUTRIENT_KEYS.length} nutrients in range
+          </p>
+          <span className="flex flex-wrap gap-2 text-[13px] font-bold">
+            <span className="rounded-full bg-leaf px-2.5 py-0.5 text-white">{counts["in-range"]} in range</span>
+            <span className="rounded-full bg-lemon px-2.5 py-0.5 text-soil">{counts["to-go"]} to go</span>
+            {counts.over > 0 && <span className="rounded-full bg-tomato px-2.5 py-0.5 text-white">{counts.over} over</span>}
+          </span>
+        </Card>
       )}
+      <WindowView data={data} profile={profile} end={today} today={today} />
+    </div>
+  );
+}
 
-      {entries.length === 0 ? (
-        <EmptyDay date={date} today={today} />
+const STATE_CHIP: Record<DayState, { text: string; className: string }> = {
+  complete: { text: "Complete", className: "bg-leaf text-white" },
+  incomplete: { text: "Looks incomplete", className: "bg-lemon text-soil" },
+  missed: { text: "Not logged", className: "border-[1.5px] border-dashed border-muted text-muted" },
+  "in-progress": { text: "In progress", className: "border-[1.5px] border-soil text-soil" },
+};
+
+/** One day on the Foods tab: name, calories, status, its foods, and actions. */
+function DayCard({ data, date, today, onAdd }: { data: SavedData; date: string; today: string; onAdd: () => void }) {
+  const entries = data.entries.filter((entry) => entry.date === date);
+  const { totals, known, foods } = totalsFor(entries);
+  const marked = data.completeDays.includes(date);
+  const halfLogged = foods > 0 && (totals.calories ?? 0) < maintenanceCalories(data.profile!, today) * INCOMPLETE_SHARE;
+  const state: DayState =
+    foods === 0
+      ? date === today
+        ? "in-progress"
+        : "missed"
+      : marked
+        ? "complete"
+        : date === today
+          ? "in-progress"
+          : halfLogged
+            ? "incomplete"
+            : "complete";
+  const chip = STATE_CHIP[state];
+  const canToggle = foods > 0 && (date === today || halfLogged || marked);
+  const showDate = date === today || date === addDays(today, -1);
+
+  return (
+    <Card className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="font-display text-xl font-extrabold">{dayName(date, today)}</h2>
+          {showDate && <span className="text-sm text-muted">{formatDay(date)}</span>}
+          {foods > 0 && <span className="text-[15px] font-bold">{formatValue(totals.calories ?? 0)} kcal</span>}
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${chip.className}`}>{chip.text}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {canToggle && (
+            <button
+              type="button"
+              aria-pressed={marked}
+              onClick={() => setDayComplete(date, !marked)}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-bold ${
+                marked ? "bg-leaf text-white hover:bg-leaf-dark" : "border-[1.5px] border-soil text-soil hover:bg-track"
+              }`}
+            >
+              {marked && <CheckIcon width={16} height={16} strokeWidth={2.5} />}
+              {marked ? "Day complete" : "Mark complete"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onAdd}
+            aria-label={`Add food to ${dayName(date, today)}`}
+            className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm font-bold text-leaf hover:bg-track"
+          >
+            <PlusIcon width={18} height={18} strokeWidth={2.25} /> Add
+          </button>
+        </div>
+      </div>
+
+      {foods === 0 ? (
+        <p className="text-[15px] text-muted">Nothing logged{date === today ? " yet" : ""}.</p>
       ) : (
         <>
-          <Card className="flex flex-col gap-4">
-            <p className="flex items-baseline gap-2">
-              <span className="font-display text-[40px] font-extrabold leading-none">{formatValue(totals.calories ?? 0)}</span>
-              <span className="text-lg">kcal{date === today ? " so far" : ""}</span>
-            </p>
-            <table className="w-full text-[15px]">
+          <FoodList entries={entries} />
+          <details className="group">
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-bold text-leaf">
+              <span className="group-open:hidden">Show this day’s totals</span>
+              <span className="hidden group-open:inline">Hide totals</span>
+            </summary>
+            <table className="w-full max-w-md text-[15px]">
               <caption className="sr-only">Totals for {formatDay(date)}</caption>
-              <thead className="sr-only">
-                <tr>
-                  <th scope="col">Nutrient</th>
-                  <th scope="col">Total</th>
-                </tr>
-              </thead>
               <tbody className="divide-y divide-line">
                 {NUTRIENT_GROUPS.flatMap((group) => group.keys)
                   .filter((key) => key !== "calories")
                   .map((key) => (
                     <tr key={key}>
-                      <th scope="row" className="py-2 pr-3 text-left font-bold">{NUTRIENTS[key].label}</th>
-                      <td className="py-2 text-right tabular-nums">
+                      <th scope="row" className="py-1.5 pr-3 text-left font-bold">
+                        {NUTRIENTS[key].label}
+                      </th>
+                      <td className="py-1.5 text-right tabular-nums">
                         {totals[key] === undefined ? "–" : `${formatValue(totals[key]!)} ${NUTRIENTS[key].unit}`}
                         {totals[key] !== undefined && known[key] < foods && (
                           <span className="block text-xs text-muted">from {known[key]} of {foods} foods</span>
@@ -137,117 +276,42 @@ function DaySummary({ data, date, today }: { data: SavedData; date: string; toda
                   ))}
               </tbody>
             </table>
-          </Card>
-          <FoodList entries={entries} title={date === today ? "Today’s foods" : `Foods on ${formatDay(date)}`} />
+          </details>
         </>
       )}
-
-    </div>
-  );
-}
-
-function EmptyDay({ date, today }: { date: string; today: string }) {
-  const when = date === today ? "today" : `on ${weekdayName(date)}`;
-  return (
-    <Card className="flex flex-col gap-3">
-      <h2 className="font-display text-[26px] font-extrabold leading-tight">What did you eat {when}?</h2>
-      <p className="text-[15px] text-muted">Tap a food to log it, or search on the right.</p>
-      <div className="flex flex-wrap gap-2.5 py-1">
-        {quickPicks().map((food, index) => {
-          const spec = amountFor(food.id);
-          const what = `${formatAmount(spec, spec.base)} of ${food.name.toLowerCase()}`;
-          return (
-            <StickerButton
-              key={food.id}
-              tone={PICK_TONES[index]}
-              index={index}
-              onClick={() =>
-                addFood(
-                  { name: food.name, foodId: food.id, perServing: food.nutrients },
-                  1,
-                  date,
-                  date === today ? `Added ${what}` : `Added ${what} to ${formatDay(date)}`,
-                )
-              }
-            >
-              + {food.name.split(",")[0]}
-            </StickerButton>
-          );
-        })}
-      </div>
     </Card>
   );
 }
 
-function FoodList({ entries, title }: { entries: Entry[]; title: string }) {
+function FoodList({ entries }: { entries: Entry[] }) {
   const ordered = [...entries].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   return (
-    <Card>
-      <h2 className="font-display text-xl font-extrabold">{title}</h2>
-      <ul className="divide-y divide-line">
-        {ordered.map((entry) => {
-          const spec = amountFor(entry.foodId);
-          return (
-            <li key={entry.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
-              <span className="min-w-0">
-                <b>{entry.name}</b>
-                {entry.nutrients.calories !== undefined && (
-                  <span className="text-muted"> · {formatValue(entry.nutrients.calories)} kcal</span>
-                )}
-              </span>
-              <span className="flex items-center gap-2">
-                <AmountSelect
-                  id={`amount-${entry.id}`}
-                  label={`Amount of ${entry.name}`}
-                  spec={spec}
-                  quantity={quantityFor(spec, entry.servings)}
-                  onChange={(quantity) => changeServings(entry.id, multipleFor(spec, quantity))}
-                />
-                <Button variant="quiet" onClick={() => removeEntry(entry.id)} aria-label={`Remove ${entry.name}`}>
-                  Remove
-                </Button>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </Card>
-  );
-}
-
-/**
- * One on/off button: "Mark day complete" / "Day complete". Shown for today,
- * and for past days that look half-logged; other past days count on their own.
- */
-function CompleteToggle({ data, date, today }: { data: SavedData; date: string; today: string }) {
-  const marked = data.completeDays.includes(date);
-  const { totals, foods } = totalsFor(data.entries.filter((entry) => entry.date === date));
-  const halfLogged = foods > 0 && (totals.calories ?? 0) < maintenanceCalories(data.profile!, today) * INCOMPLETE_SHARE;
-  const isToday = date === today;
-
-  if (!isToday && !halfLogged && !marked) {
-    return foods > 0 ? <p className="text-sm text-muted">Counts toward your 7-day numbers</p> : null;
-  }
-  return (
-    <div className="flex flex-col items-end gap-1">
-      <button
-        type="button"
-        aria-pressed={marked}
-        onClick={() => setDayComplete(date, !marked)}
-        className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-bold ${
-          marked ? "bg-leaf text-white hover:bg-leaf-dark" : "border-[1.5px] border-soil text-soil hover:bg-track"
-        }`}
-      >
-        {marked && <CheckIcon width={18} height={18} strokeWidth={2.5} />}
-        {marked ? "Day complete" : "Mark day complete"}
-      </button>
-      <span className="text-xs text-muted">
-        {marked
-          ? "Counts toward your 7-day numbers"
-          : isToday
-            ? "Or it counts automatically at midnight"
-            : "Looks half-logged, so it’s left out for now"}
-      </span>
-    </div>
+    <ul className="divide-y divide-line">
+      {ordered.map((entry) => {
+        const spec = amountFor(entry.foodId);
+        return (
+          <li key={entry.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">
+            <span className="min-w-0">
+              <b>{entry.name}</b>
+              {entry.nutrients.calories !== undefined && (
+                <span className="text-muted"> · {formatValue(entry.nutrients.calories)} kcal</span>
+              )}
+            </span>
+            <span className="flex items-center gap-2">
+              <AmountSelect
+                id={`amount-${entry.id}`}
+                label={`Amount of ${entry.name}`}
+                spec={spec}
+                quantity={quantityFor(spec, entry.servings)}
+                onChange={(quantity) => changeServings(entry.id, multipleFor(spec, quantity))}
+              />
+              <Button variant="quiet" onClick={() => removeEntry(entry.id)} aria-label={`Remove ${entry.name}`}>
+                Remove
+              </Button>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

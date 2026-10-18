@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// Last 7 days now lives in the Food log's "Dietary stats" panel.
+// Last 7 days is the Progress tab of This week (/log).
 export default function WeekPage() {
   redirect("/log");
 }

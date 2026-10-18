@@ -17,7 +17,7 @@ export function RequireProfile() {
   return null;
 }
 
-/** On the welcome screen: sends someone who has set up to the Food log. */
+/** On the welcome screen: sends someone who has set up to This week. */
 export function RedirectIfSetUp() {
   const data = useSavedData();
   const router = useRouter();

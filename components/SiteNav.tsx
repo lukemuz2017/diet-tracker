@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSavedData } from "@/lib/storage";
 
 const links = [
-  { href: "/log", label: "Food log" },
+  { href: "/log", label: "This week" },
   { href: "/history", label: "History" },
   { href: "/targets", label: "Targets" },
 ] as const;

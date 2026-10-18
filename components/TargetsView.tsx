@@ -68,7 +68,7 @@ export function TargetsView() {
         </p>
 
         <ButtonLink href="/log" className="min-h-12 self-start px-7 text-[17px]">
-          {firstVisit ? "Log your first food" : "Back to Food log"}
+          {firstVisit ? "Log your first food" : "Back to This week"}
         </ButtonLink>
       </div>
     </>

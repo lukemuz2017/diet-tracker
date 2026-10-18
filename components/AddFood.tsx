@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { CustomFoodForm } from "@/components/CustomFoodForm";
 import { FoodRow } from "@/components/FoodRow";
 import { FoodSearch, type SearchOption } from "@/components/FoodSearch";
-import { Card } from "@/components/ui/Card";
-import { PlusIcon } from "@/components/ui/icons";
 import { addFood } from "@/lib/actions";
 import { formatAmount, quantityFor } from "@/lib/amounts";
 import { formatDay } from "@/lib/dates";
@@ -35,15 +33,14 @@ function toOption(choice: Choice): SearchOption {
   };
 }
 
-// The right side of the Food log. Closed, it's one "Add food" button; open,
-// it's a search with a Foods / Meals & recipes toggle, so it stays compact.
+// Adding food to one day: a search with a Foods / Meals & recipes toggle,
+// plus links to browse all foods, add your own, or make a recipe. The page's
+// "+ Add food" button opens it.
 export function AddFoodPanel({ data, date, today }: { data: SavedData; date: string; today: string }) {
-  const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("foods");
   const [picked, setPicked] = useState<string | null>(null);
   const [extra, setExtra] = useState<"browse" | "own" | null>(null);
   const [ownName, setOwnName] = useState("");
-  const panelId = useId();
   const isToday = date === today;
   const dayLabel = isToday ? "today" : formatDay(date);
 
@@ -115,26 +112,13 @@ export function AddFoodPanel({ data, date, today }: { data: SavedData; date: str
   );
 
   return (
-    <Card className="flex flex-col gap-4">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((value) => !value)}
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
-      >
-        <PlusIcon width={20} height={20} strokeWidth={2.25} className={`transition-transform ${open ? "rotate-45" : ""}`} />
-        {open ? "Cancel" : `Add food to ${dayLabel}`}
-      </button>
-
-      <div id={panelId} hidden={!open} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
         <div role="group" aria-label="What to search" className="flex gap-1 rounded-full border-[1.5px] border-field bg-white p-1">
           {modeButton("foods", "Foods")}
           {modeButton("meals", "Meals & recipes")}
         </div>
 
-        {open && (
-          <FoodSearch
+        <FoodSearch
             key={mode}
             autoFocus
             label={mode === "foods" ? "Search foods" : "Search your meals and recipes"}
@@ -144,7 +128,6 @@ export function AddFoodPanel({ data, date, today }: { data: SavedData; date: str
             onPick={setPicked}
             onAddOwn={addOwn}
           />
-        )}
 
         {pickedChoice && (
           <div className="rounded-field border-[1.5px] border-leaf px-3">
@@ -230,7 +213,6 @@ export function AddFoodPanel({ data, date, today }: { data: SavedData; date: str
             />
           </section>
         )}
-      </div>
-    </Card>
+    </div>
   );
 }
