@@ -26,7 +26,7 @@ Working name: TBD. Repo folder: `health-tracker`.
 
 - `flows.md`: the three user flows (Mermaid diagram), routes, states and errors, and the table of nutrient targets. It's the source of truth for what the app does.
 - `README.md`: shows the same diagram (keep the two copies in sync), plus the onboarding research and first-run check write-ups.
-- `docs/user-flows.pdf`: the diagram as a PDF, made with Mermaid CLI (`@mermaid-js/mermaid-cli`, run through `npx`, not a project dependency). Regenerate it whenever the diagram changes.
+- `user-flows.pdf`: the diagram as a PDF, made with Mermaid CLI (`@mermaid-js/mermaid-cli`, run through `npx`, not a project dependency). Regenerate it whenever the diagram changes.
 - `research/onboarding-research.md`: notes and sources from the onboarding research.
 - `AGENTS.md`: this file, the only agent context file. If a tool generates `CLAUDE.md`, move anything useful here and delete it.
 

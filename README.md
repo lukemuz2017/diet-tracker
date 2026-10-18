@@ -10,7 +10,7 @@ Built for MPCS 51238 *Design, Build, Ship*, Assignment 3: Patterns & Flows.
 
 ## User flows
 
-Three flows: the first visit, the main task, and coming back. Each step is its own page. Routes, states, errors and the full table of targets are in [`flows.md`](flows.md). A PDF of the chart is in [`docs/user-flows.pdf`](docs/user-flows.pdf).
+Three flows: the first visit, the main task, and coming back. Each step is its own page. Routes, states, errors and the full table of targets are in [`flows.md`](flows.md). A PDF of the chart is in [`user-flows.pdf`](user-flows.pdf).
 
 ```mermaid
 flowchart LR
