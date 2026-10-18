@@ -9,8 +9,9 @@ The tool is built around three flows: the **first visit**, the **main task** (lo
 ## Diagram
 
 ```mermaid
-flowchart TD
+flowchart LR
   subgraph FV["1 · First visit"]
+    direction TB
     A(["Open app, nothing saved"]) --> B["Welcome · /<br/>what it does · Get started"]
     B --> C["Your details · /setup<br/>units, height, weight, age, sex, activity<br/>'why we ask' hints"]
     C -- "missing or out-of-range value:<br/>error by the field, input kept" --> C
@@ -19,6 +20,7 @@ flowchart TD
   end
 
   subgraph MT["2 · Main task: log food"]
+    direction TB
     T["Today · /today<br/>today's bars · grams to go"] --> L["Add food · /log<br/>common · recent · custom<br/>date defaults to today"]
     L -- "error by the field, input kept" --> L
     L -- "saved" --> T2["Today · /today<br/>bars update · 'Added oatmeal' · Undo"]
@@ -27,15 +29,16 @@ flowchart TD
   end
 
   subgraph CB["3 · Coming back"]
+    direction TB
     R(["Return visit"]) --> W["Today · /today<br/>Welcome back · 5 of last 7 days logged"]
-    W -- "a day was missed" --> M["Missed-day nudge<br/>opens /log for that date"]
+    W -- "a day was missed" --> M["Missed-day nudge<br/>opens Add food for that date"]
     W -- "a day looks half-logged" --> I["Looks incomplete<br/>add food or mark complete"]
     W --> V["Last 7 days · /week<br/>7-day averages vs. targets<br/>suggestions with a one-tap fix"]
   end
 
-  E -- "'First food logged'" --> T2
-  M --> L
-  V -- "one-tap fix logs the food" --> T2
+  FV -- "'First food logged'" --> MT
+  MT -- "the next day" --> CB
+  CB -- "nudge or one-tap fix<br/>opens Add food" --> MT
 ```
 
 ## Routes
