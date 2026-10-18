@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ComingNext } from "@/components/ComingNext";
+import { RequireProfile } from "@/components/Gates";
 import { PageHeader } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Today" };
@@ -7,6 +8,7 @@ export const metadata: Metadata = { title: "Today" };
 export default function TodayPage() {
   return (
     <>
+      <RequireProfile />
       <PageHeader title="Today" />
       <ComingNext
         items={[

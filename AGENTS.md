@@ -71,6 +71,8 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
 - `app/` for routes, `components/` for shared UI, `lib/` for pure logic (target math, weekly summaries, suggestions, storage).
 - All `localStorage` access goes through one module (`lib/storage.ts`). Store a `version` field so the saved shape can be migrated. Read only on the client, and handle missing or corrupt data without crashing.
 - Keep target math, weekly summaries and suggestion rules in pure functions so they're easy to check.
+- Tests: `npm test` runs Node's built-in test runner on `lib/**/*.test.ts` (Node 24 strips the types; no test package). Files in `lib/` import each other with the `.ts` extension (`./targets.ts`) so Node can run them directly; app code imports them as `@/lib/...`.
+- Saved data and the current date are read only in the browser (`useSavedData()` returns null on the server). Reading either during server rendering breaks the build under Cache Components.
 - Commit after each meaningful step, with a message that says what changed and why.
 
 ## Decisions log
@@ -94,4 +96,5 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
   - "Load a sample 2 weeks" on `/targets` (with an on-page confirmation) so later features can be demoed.
   - `/week` is now "Last 7 days". Shared nav: Today · Log · Last 7 days · Targets.
 - 2026-10-18 (design): chose the **Market Stand** direction from four mood boards (others: Nutrition Label, Steady Band, Riso Plate). Tokens and component rules are in `design.md`. Images, if any, come from Codex `$imagegen` and are saved as static files in `public/images/`. Codex is used only for images, never for code, so two agents don't edit the same files.
-- Next: build route stubs with shared navigation and the shared form components, then the setup → ranges → first-log flow.
+- 2026-10-18 (build): foundation done (theme, shared components, nav, route stubs). First visit done: setup form with validation, target math with tests, "Your ranges" with ⓘ explanations, saving, and redirects (welcome ↔ Today; nav only after setup). Ages 19–100 only, because the RDA tables used start at 19.
+- Next: logging. Common-foods list, the Add food page (quick add, recent, custom form, date), and Today's bars with edit/delete and Undo.

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSavedData } from "@/lib/storage";
 
 const links = [
   { href: "/today", label: "Today" },
@@ -11,10 +12,11 @@ const links = [
 ] as const;
 
 // Shared navigation: pills in the header on wider screens, a bottom tab bar on
-// phones. Hidden on the welcome screen, which has one job: Get started.
+// phones. Shown once setup is done, so the first visit stays one straight path.
 export function SiteNav() {
   const pathname = usePathname();
-  if (pathname === "/") return null;
+  const data = useSavedData();
+  if (pathname === "/" || !data?.profile) return null;
 
   return (
     <nav

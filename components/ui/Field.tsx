@@ -23,19 +23,24 @@ export function TextField({
   label,
   hint,
   error,
+  invalid = false,
   unit,
   className = "",
+  "aria-describedby": extraDescribedBy,
   ...inputProps
 }: Omit<ComponentProps<"input">, "id"> & {
   id: string;
   label: string;
   hint?: ReactNode;
   error?: string;
+  /** Marks the field invalid when its message is shown elsewhere (e.g. a group's). */
+  invalid?: boolean;
   /** Shown after the input; `long` is read out with the label. */
   unit?: { short: string; long: string };
 }) {
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
+  const isInvalid = Boolean(error) || invalid;
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
@@ -50,13 +55,13 @@ export function TextField({
       )}
       <div
         className={`field-box flex h-12 items-center gap-2 rounded-field bg-white px-3.5 ${
-          error ? "border-2 border-tomato" : "border-[1.5px] border-field"
+          isInvalid ? "border-2 border-tomato" : "border-[1.5px] border-field"
         }`}
       >
         <input
           id={id}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy(hintId, errorId)}
+          aria-invalid={isInvalid ? true : undefined}
+          aria-describedby={describedBy(hintId, errorId, extraDescribedBy)}
           className="min-w-0 flex-1 bg-transparent text-base text-soil"
           {...inputProps}
         />
@@ -71,6 +76,13 @@ export function TextField({
   );
 }
 
+const choiceBase =
+  "cursor-pointer border-[1.5px] border-field bg-white has-checked:border-leaf has-checked:bg-leaf has-checked:text-white has-focus-visible:outline-[3px] has-focus-visible:outline-offset-2 has-focus-visible:outline-soil has-focus-visible:outline-solid";
+
+/**
+ * Radio choices as pills, or as stacked cards when options have descriptions.
+ * Each radio's id is `${name}-${value}`, so a form can focus the first one.
+ */
 export function ChoiceField<T extends string>({
   name,
   legend,
@@ -84,12 +96,13 @@ export function ChoiceField<T extends string>({
   legend: string;
   hint?: ReactNode;
   error?: string;
-  options: readonly { value: T; label: string }[];
+  options: readonly { value: T; label: string; description?: string }[];
   value: T | null;
   onChange: (value: T) => void;
 }) {
   const hintId = hint ? `${name}-hint` : undefined;
   const errorId = error ? `${name}-error` : undefined;
+  const stacked = options.some((option) => option.description);
 
   return (
     <fieldset className="flex flex-col gap-1.5" aria-describedby={describedBy(hintId, errorId)}>
@@ -99,21 +112,35 @@ export function ChoiceField<T extends string>({
           {hint}
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
+      <div className={stacked ? "flex flex-col gap-2" : "flex flex-wrap gap-2"}>
         {options.map((option) => (
           <label
             key={option.value}
-            className="inline-flex min-h-11 cursor-pointer items-center rounded-full border-[1.5px] border-field bg-white px-4 text-[15px] font-bold has-checked:border-leaf has-checked:bg-leaf has-checked:text-white has-focus-visible:outline-[3px] has-focus-visible:outline-offset-2 has-focus-visible:outline-soil has-focus-visible:outline-solid"
+            className={
+              stacked
+                ? `${choiceBase} group flex flex-col rounded-field px-4 py-2.5`
+                : `${choiceBase} inline-flex min-h-11 items-center rounded-full px-4 text-[15px] font-bold`
+            }
           >
             <input
               type="radio"
+              id={`${name}-${option.value}`}
               name={name}
               value={option.value}
               checked={value === option.value}
               onChange={() => onChange(option.value)}
               className="sr-only"
             />
-            {option.label}
+            {stacked ? (
+              <>
+                <span className="text-[15px] font-bold">{option.label}</span>
+                <span className="text-[13px] text-muted group-has-checked:text-leaf-tint">
+                  {option.description}
+                </span>
+              </>
+            ) : (
+              option.label
+            )}
           </label>
         ))}
       </div>

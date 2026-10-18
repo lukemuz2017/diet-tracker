@@ -5,7 +5,17 @@ import { InfoIcon } from "./icons";
 
 // The ⓘ button (design.md: Info button). Opens a small popover that explains
 // a range; closes on Escape (returning focus) or on a click outside.
-export function InfoButton({ label, children }: { label: string; children: ReactNode }) {
+// anchor="parent" spans the popover across the nearest positioned ancestor
+// (e.g. a list row), so it can't run off a narrow screen.
+export function InfoButton({
+  label,
+  children,
+  anchor = "button",
+}: {
+  label: string;
+  children: ReactNode;
+  anchor?: "button" | "parent";
+}) {
   const [open, setOpen] = useState(false);
   const popoverId = useId();
   const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -31,7 +41,7 @@ export function InfoButton({ label, children }: { label: string; children: React
   }, [open]);
 
   return (
-    <span ref={wrapperRef} className="relative inline-flex align-middle">
+    <span ref={wrapperRef} className={`${anchor === "button" ? "relative" : ""} inline-flex align-middle`}>
       <button
         ref={buttonRef}
         type="button"
@@ -46,7 +56,9 @@ export function InfoButton({ label, children }: { label: string; children: React
       <span
         id={popoverId}
         hidden={!open}
-        className="absolute left-0 top-9 z-10 w-72 rounded-xl border-[1.5px] border-soil bg-white p-3 text-[13px] font-normal leading-relaxed text-soil shadow-[3px_3px_0_var(--color-kraft)]"
+        className={`absolute z-10 rounded-xl border-[1.5px] border-soil bg-white p-3 text-[13px] font-normal leading-relaxed text-soil shadow-[3px_3px_0_var(--color-kraft)] ${
+          anchor === "button" ? "left-0 top-9 w-72" : "inset-x-0 top-full mt-1"
+        }`}
       >
         {children}
       </span>

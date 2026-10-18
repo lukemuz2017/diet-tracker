@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ComingNext } from "@/components/ComingNext";
+import { RequireProfile } from "@/components/Gates";
 import { PageHeader } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Last 7 days" };
@@ -7,6 +8,7 @@ export const metadata: Metadata = { title: "Last 7 days" };
 export default function WeekPage() {
   return (
     <>
+      <RequireProfile />
       <PageHeader
         title="Last 7 days"
         description="Your 7-day averages against your ranges, and what to focus on next."

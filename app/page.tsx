@@ -1,5 +1,6 @@
 import { ButtonLink } from "@/components/ui/Button";
 import { Eyebrow } from "@/components/ui/Card";
+import { RedirectIfSetUp } from "@/components/Gates";
 
 // The produce stickers show the kind of thing the app tracks, with real
 // numbers (USDA FoodData Central, per serving shown).
@@ -13,6 +14,7 @@ const stickers = [
 export default function WelcomePage() {
   return (
     <div className="grid items-center gap-10 py-6 sm:py-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <RedirectIfSetUp />
       <div className="flex flex-col gap-5">
         <Eyebrow>Balanced eating, not dieting</Eyebrow>
         <h1 className="font-display text-5xl font-extrabold leading-[0.95] tracking-tight text-balance sm:text-[64px]">

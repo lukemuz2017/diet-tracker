@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Atkinson_Hyperlegible, Bricolage_Grotesque } from "next/font/google";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
+import { StorageBanner } from "@/components/StorageBanner";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to content
         </a>
+        <StorageBanner />
         <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2.5 rounded-full">
             <span
