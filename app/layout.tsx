@@ -3,6 +3,7 @@ import { Atkinson_Hyperlegible, Bricolage_Grotesque } from "next/font/google";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { StorageBanner } from "@/components/StorageBanner";
+import { Toast } from "@/components/Toast";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 sm:px-6 sm:pb-16">
           {children}
         </main>
+        <Toast />
       </body>
     </html>
   );
