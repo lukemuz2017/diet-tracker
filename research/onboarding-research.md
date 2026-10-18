@@ -105,7 +105,7 @@ On Oct 18, 2026, three research agents each studied one app: **MyFitnessPal**, *
 - Mark a day complete. Days that look half-logged are flagged and left out of the averages. *(MyNetDiary, MyFitnessPal)*
 - A weekend vs. weekday trend. *(MyNetDiary)*
 - Days logged out of the last 7, instead of a streak that resets.
-- **A rolling 7-day balance**, which is the student's own idea rather than something from these apps. Nutrients are judged on the last 7 days, not on fixed Monday–Sunday weeks, and daily ranges are a guide. The design is being worked out in `flows.md`.
+- **A rolling 7-day balance**, which is the student's own idea rather than something from these apps. Nutrients are judged on the last 7 days, not on fixed Monday–Sunday weeks, and daily ranges are a guide. The rules are in `flows.md`, under "How the 7-day window works".
 
 **Not using:** long quizzes, signup or paywall walls, fake progress loaders, countdown timers, streaks that reset, good/bad color labels, tooltip tours, weight projections.
 

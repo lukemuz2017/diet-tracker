@@ -17,8 +17,8 @@ Context for any coding agent working in this repo. Read it before doing anything
 A diet tracking and planning tool for keeping a **balanced diet**. It is not a weight-loss app: targets are set to *maintain* current weight.
 
 1. **Set up once.** The person enters a few facts about themselves (height, weight, age, sex, activity level). The app estimates maintenance calories and sets target ranges for each tracked nutrient.
-2. **Log food.** They log what they eat each day, or catch up on earlier days of the week. Each day shows where every nutrient stands against its range: under, in range, or over.
-3. **Review the week.** At the end of each week the app summarizes how many days each range was hit and suggests one to three things to focus on next week (e.g. "Protein was under range on 5 of 7 days. Add a protein source at breakfast.").
+2. **Log food.** They log what they eat each day, or catch up on earlier days. Today shows where every nutrient stands against its daily range: under, in range, or over.
+3. **Check the last 7 days.** Every nutrient is judged on its rolling 7-day average. The app shows days in range and suggests one to three things to focus on, each with a one-tap fix (e.g. "Potassium averaged 60% of target → Add a banana").
 
 Working name: TBD. Repo folder: `health-tracker`.
 
@@ -43,7 +43,7 @@ Working name: TBD. Repo folder: `health-tracker`.
 
 ## Design rules (from the brief)
 
-- **Flows first.** Three flows: first visit, main task (logging food), coming back (weekly review). Each step is its own route; see `flows.md`.
+- **Flows first.** Three flows: first visit, main task (logging food), coming back (your last 7 days and suggestions). Each step is its own route; see `flows.md`.
 - **The first visit is the onboarding.** Someone new understands what the tool is for and does something useful right away. Learn by doing: no tours, no dead-end empty screens.
 - **Forms:** one column; a visible `<label>` on every field; errors sit next to the field and say what to do next ("Enter your weight in pounds", not "Invalid input"); never clear what the person typed when there's an error.
 - **Shared components:** buttons, inputs, fields (label + hint + error) and navigation are built once in `components/` and used everywhere.
@@ -59,7 +59,7 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
   - BMR = 10 × kg + 6.25 × cm − 5 × age, then +5 (male) or −161 (female).
   - Activity factors: 1.2 sedentary, 1.375 lightly active, 1.55 moderately active, 1.725 very active.
 - **Macros:** Acceptable Macronutrient Distribution Ranges converted to grams at 4 / 4 / 9 kcal per gram (protein / carbs / fat). Protein never goes below 0.8 g per kg of body weight.
-- **Timescales:** being revised. Every nutrient will be judged on a rolling 7-day average, with daily ranges as a guide (see the decisions log). The old split (macros daily, vitamins and minerals weekly) is superseded.
+- **Rolling 7-day window:** every nutrient is judged on its average over today and the 6 days before; daily ranges are only a guide. The full rules (complete days, the 40% "looks incomplete" threshold, first-week stages, the 14-day weekend trend) are in `flows.md` under "How the 7-day window works". Keep this logic in pure functions in `lib/`.
 - **Unknown values:** only food name, date, calories, protein, carbs and fat are required. A blank optional nutrient is unknown, not zero, and summaries say how many foods they're based on.
 - **Common foods:** a static, bundled list (about 40 foods) with all 12 nutrients per standard serving. Values come from USDA FoodData Central, cited in the data file.
 
@@ -84,4 +84,10 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
   - Logging: one-tap add with Undo and remembered serving size; bars show grams and what's left (going over a minimum is never red); "what it adds" tags instead of good/bad colors.
   - Coming back: suggestions with a one-tap fix; mark a day complete (half-logged days are flagged and left out of averages); weekend vs. weekday trend; days logged instead of streaks.
   - Not chosen for now: copy yesterday's food.
-- 2026-10-18 (student's idea): judge nutrients on a **rolling 7-day window** (today and the 6 days before), not Monday–Sunday weeks. Daily ranges stay as a guide. Details pending: when today counts, how suggestions refresh, how the first week works.
+- 2026-10-18 (student's idea): judge nutrients on a **rolling 7-day window** (today and the 6 days before), not Monday–Sunday weeks. Daily ranges stay as a guide.
+  - Only complete days count. Today counts once marked complete, or at midnight. Unlogged days are gaps, not zeros.
+  - Suggestions refresh daily, from complete days only.
+  - The first week unlocks in stages: averages after day 1, suggestions after 3 complete days, the full window on day 7, and the weekend trend once 14 days hold enough data.
+  - "Load a sample 2 weeks" on `/targets` (with an on-page confirmation) so later features can be demoed.
+  - `/week` is now "Last 7 days". Shared nav: Today · Log · Last 7 days · Targets.
+- Next: build route stubs with shared navigation and the shared form components, then the setup → ranges → first-log flow.

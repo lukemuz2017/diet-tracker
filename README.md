@@ -1,12 +1,12 @@
 # Health Tracker (working name)
 
-A diet tracker for keeping a **balanced diet** and maintaining your weight, not losing it. Enter a few details about yourself once, and it sets daily and weekly target ranges for calories, macros, fiber, added sugar, sodium and key vitamins and minerals. Log what you eat, see where each day stands, and get a short weekly review that tells you what to focus on next.
+A diet tracker for keeping a **balanced diet** and maintaining your weight, not losing it. Enter a few details about yourself once, and it sets target ranges for calories, macros, fiber, added sugar, sodium and key vitamins and minerals. Log what you eat, and see where you stand today and over your last 7 days, with suggestions for what to eat more or less of.
 
 Built for MPCS 51238 *Design, Build, Ship*, Assignment 3: Patterns & Flows.
 
 ## The main task, in one sentence
 
-> I log what I ate today → I see where each nutrient stands against my range → on Sunday I get my week in review and what to focus on next week.
+> I log what I ate today → I see where each nutrient stands today and over my last 7 days → I come back tomorrow, and it tells me what to eat more or less of.
 
 ## User flows
 
@@ -16,34 +16,38 @@ Three flows: the first visit, the main task, and coming back. Each step is its o
 flowchart TD
   subgraph FV["1 · First visit"]
     A(["Open app, nothing saved"]) --> B["Welcome · /<br/>what it does · Get started"]
-    B --> C["Your details · /setup<br/>units, height, weight, age, sex, activity"]
+    B --> C["Your details · /setup<br/>units, height, weight, age, sex, activity<br/>'why we ask' hints"]
     C -- "missing or out-of-range value:<br/>error by the field, input kept" --> C
-    C --> D["Your ranges · /targets<br/>daily and weekly targets, explained"]
-    D --> E["First log · /log<br/>tap a common food"]
+    C --> D["Your ranges · /targets<br/>ⓘ explains each range"]
+    D --> E["First log · /log<br/>one tap on a common food"]
   end
 
   subgraph MT["2 · Main task: log food"]
-    T["Today · /today<br/>progress against each range"] --> L["Add food · /log<br/>common · recent · custom<br/>date defaults to today"]
+    T["Today · /today<br/>today's bars · grams to go"] --> L["Add food · /log<br/>common · recent · custom<br/>date defaults to today"]
     L -- "error by the field, input kept" --> L
-    L -- "saved" --> T2["Today · /today<br/>bars update · 'Added oatmeal'"]
+    L -- "saved" --> T2["Today · /today<br/>bars update · 'Added oatmeal' · Undo"]
     T2 -- "edit or delete, with Undo" --> T2
+    T2 -- "done eating for the day" --> K["Mark day complete<br/>today joins the 7-day numbers"]
   end
 
   subgraph CB["3 · Coming back"]
-    R(["Return visit"]) --> W["Today · /today<br/>Welcome back · 4 of 7 days logged"]
+    R(["Return visit"]) --> W["Today · /today<br/>Welcome back · 5 of last 7 days logged"]
     W -- "a day was missed" --> M["Missed-day nudge<br/>opens /log for that date"]
-    W -- "week ended (Sunday)" --> V["Week review · /week<br/>days in range · weekly averages<br/>1–3 suggestions"]
-    V --> N["New week starts Monday<br/>past weeks stay viewable"]
+    W -- "a day looks half-logged" --> I["Looks incomplete<br/>add food or mark complete"]
+    W --> V["Last 7 days · /week<br/>7-day averages vs. targets<br/>suggestions with a one-tap fix"]
   end
 
-  E --> T2
+  E -- "'First food logged'" --> T2
   M --> L
+  V -- "one-tap fix logs the food" --> T2
 ```
 
 ## How it works
 
 - **No account.** Everything is saved in your browser (`localStorage`), so it remembers you on the device you used.
 - **Targets** are estimates for maintaining your weight (Mifflin-St Jeor plus standard dietary guidelines), not medical advice.
+- **A rolling 7-day window.** Each nutrient is judged on its average over the last 7 complete days, not fixed Monday–Sunday weeks. One day out of range isn't a miss; today's bars are a guide. Today counts once you mark it complete (or at midnight), and unlogged days are left out, not counted as zero.
+- **The first week unlocks in stages:** averages after your first complete day, suggestions after 3, a full window on day 7, and a weekend vs. weekday trend after about two weeks.
 - **Logging** needs a food name, calories, protein, carbs and fat. The other nutrients are optional, and the built-in common foods fill them all in.
 
 ## Run it locally
