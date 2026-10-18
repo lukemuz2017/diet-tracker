@@ -26,6 +26,7 @@ Working name: TBD. Repo folder: `health-tracker`.
 
 - `flows.md`: the three user flows (Mermaid diagram), routes, states and errors, and the table of nutrient targets. It's the source of truth for what the app does.
 - `README.md`: shows the same diagram (keep the two copies in sync), plus the onboarding research and first-run check write-ups.
+- `design.md`: the visual design (Market Stand): color tokens with checked contrast, type, spacing, component rules, imagery and voice. Follow it for every screen; `mood-board.pdf` shows it.
 - `user-flows.pdf`: the diagram as a PDF, made with Mermaid CLI (`@mermaid-js/mermaid-cli`, run through `npx`, not a project dependency). Regenerate it whenever the diagram changes.
 - `research/onboarding-research.md`: notes and sources from the onboarding research.
 - `AGENTS.md`: this file, the only agent context file. If a tool generates `CLAUDE.md`, move anything useful here and delete it.
@@ -92,4 +93,5 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
   - The first week unlocks in stages: averages after day 1, suggestions after 3 complete days, the full window on day 7, and the weekend trend once 14 days hold enough data.
   - "Load a sample 2 weeks" on `/targets` (with an on-page confirmation) so later features can be demoed.
   - `/week` is now "Last 7 days". Shared nav: Today · Log · Last 7 days · Targets.
+- 2026-10-18 (design): chose the **Market Stand** direction from four mood boards (others: Nutrition Label, Steady Band, Riso Plate). Tokens and component rules are in `design.md`. Images, if any, come from Codex `$imagegen` and are saved as static files in `public/images/`. Codex is used only for images, never for code, so two agents don't edit the same files.
 - Next: build route stubs with shared navigation and the shared form components, then the setup → ranges → first-log flow.
