@@ -22,10 +22,19 @@ export function matchesQuery(name: string, query: string): boolean {
 // filter, arrow keys to move, Enter to pick, Escape to close.
 export function FoodSearch({
   options,
+  emptyOptions = [],
+  label = "Search foods",
+  placeholder = "Try “eggs” or “rice”",
+  autoFocus = false,
   onPick,
   onAddOwn,
 }: {
   options: SearchOption[];
+  /** Shown before anything is typed, e.g. recent foods. */
+  emptyOptions?: SearchOption[];
+  label?: string;
+  placeholder?: string;
+  autoFocus?: boolean;
   onPick: (key: string) => void;
   /** Offered when typing, to add the typed name as your own food. */
   onAddOwn: (name: string) => void;
@@ -37,9 +46,11 @@ export function FoodSearch({
   const inputId = useId();
 
   const typed = query.trim();
-  const matches = typed ? options.filter((option) => matchesQuery(option.name, typed)).slice(0, MAX_SUGGESTIONS) : [];
-  // The last row always offers adding the typed name as your own food.
-  const rows = typed ? [...matches.map((option) => option.key), "__own"] : [];
+  const matches = typed
+    ? options.filter((option) => matchesQuery(option.name, typed)).slice(0, MAX_SUGGESTIONS)
+    : emptyOptions.slice(0, MAX_SUGGESTIONS);
+  // When typing, the last row offers adding the typed name as your own food.
+  const rows = typed ? [...matches.map((option) => option.key), "__own"] : matches.map((option) => option.key);
   const showList = open && rows.length > 0;
   const optionId = (index: number) => `${listId}-${index}`;
 
@@ -72,7 +83,7 @@ export function FoodSearch({
   return (
     <div className="relative flex flex-col gap-1.5">
       <label htmlFor={inputId} className="text-[15px] font-bold">
-        Search foods
+        {label}
       </label>
       <div className="field-box flex h-12 items-center rounded-field border-[1.5px] border-field bg-white px-3.5">
         <input
@@ -84,7 +95,8 @@ export function FoodSearch({
           aria-autocomplete="list"
           aria-activedescendant={showList ? optionId(active) : undefined}
           autoComplete="off"
-          placeholder="Try “eggs” or “rice”"
+          placeholder={placeholder}
+          autoFocus={autoFocus}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -100,7 +112,7 @@ export function FoodSearch({
       <ul
         id={listId}
         role="listbox"
-        aria-label="Suggested foods"
+        aria-label={typed ? "Matching foods" : "Suggestions"}
         hidden={!showList}
         className="absolute inset-x-0 top-full z-20 mt-1 max-h-80 overflow-y-auto rounded-xl border-[1.5px] border-soil bg-white py-1 shadow-[3px_3px_0_var(--color-kraft)]"
       >

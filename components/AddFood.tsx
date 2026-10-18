@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { CustomFoodForm } from "@/components/CustomFoodForm";
 import { FoodRow } from "@/components/FoodRow";
 import { FoodSearch, type SearchOption } from "@/components/FoodSearch";
 import { Card } from "@/components/ui/Card";
+import { PlusIcon } from "@/components/ui/icons";
 import { addFood } from "@/lib/actions";
 import { formatAmount, quantityFor } from "@/lib/amounts";
 import { formatDay } from "@/lib/dates";
-import { CATEGORY_ORDER, FOODS, RECIPE_SERVINGS, amountFor, categoryOf } from "@/lib/foods";
+import { CATEGORY_ORDER, FOODS, amountFor, categoryOf } from "@/lib/foods";
 import { formatValue, recentFoods } from "@/lib/log";
 import type { Nutrients } from "@/lib/nutrients";
 import type { SavedData } from "@/lib/storage";
@@ -22,11 +23,29 @@ interface Choice {
   multiple: number;
 }
 
-// The right side of the Food log: everything for adding food to the chosen day.
+type Mode = "foods" | "meals";
+
+function toOption(choice: Choice): SearchOption {
+  const spec = amountFor(choice.foodId);
+  const kcal = choice.perServing.calories;
+  return {
+    key: choice.key,
+    name: choice.name,
+    detail: `${formatAmount(spec, spec.base)}${kcal !== undefined ? ` · ${formatValue(kcal)} kcal` : ""}`,
+  };
+}
+
+// The right side of the Food log. Closed, it's one "Add food" button; open,
+// it's a search with a Foods / Meals & recipes toggle, so it stays compact.
 export function AddFoodPanel({ data, date, today }: { data: SavedData; date: string; today: string }) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>("foods");
   const [picked, setPicked] = useState<string | null>(null);
+  const [extra, setExtra] = useState<"browse" | "own" | null>(null);
   const [ownName, setOwnName] = useState("");
+  const panelId = useId();
   const isToday = date === today;
+  const dayLabel = isToday ? "today" : formatDay(date);
 
   function add(food: { name: string; foodId?: string; perServing: Nutrients }, multiple: number) {
     const spec = amountFor(food.foodId);
@@ -35,58 +54,102 @@ export function AddFoodPanel({ data, date, today }: { data: SavedData; date: str
     setPicked(null);
   }
 
-  const recent = recentFoods(data.entries);
-  const lastMultiple = (foodId: string) => recentFoods(data.entries, 100).find((item) => item.foodId === foodId)?.lastServings ?? 1;
-  const recipeChoices: Choice[] = data.recipes.map((recipe) => ({
-    key: `recipe:${recipe.id}`,
-    name: recipe.name,
-    foodId: `recipe:${recipe.id}`,
-    perServing: recipe.perServing,
-    multiple: 1,
-  }));
+  const recent = recentFoods(data.entries, 100);
+  const lastMultiple = (foodId: string) => recent.find((item) => item.foodId === foodId)?.lastServings ?? 1;
 
-  // Search covers recent foods first, then your recipes, then the common list.
-  const choices: Choice[] = [
-    ...recent.map((food) => ({ key: food.key, name: food.name, foodId: food.foodId, perServing: food.perServing, multiple: food.lastServings })),
-    ...recipeChoices.filter((choice) => !recent.some((item) => item.foodId === choice.foodId)),
-    ...FOODS.filter((food) => !recent.some((item) => item.foodId === food.id)).map((food) => ({
-      key: food.id,
-      name: food.name,
-      foodId: food.id,
-      perServing: food.nutrients,
-      multiple: lastMultiple(food.id),
-    })),
+  // Foods: the common list, with the ones you've logged before first.
+  const foodChoices: Choice[] = FOODS.map((food) => ({
+    key: food.id,
+    name: food.name,
+    foodId: food.id,
+    perServing: food.nutrients,
+    multiple: lastMultiple(food.id),
+  }));
+  const recentFoodKeys = recent.filter((item) => item.foodId && !item.foodId.startsWith("recipe:")).map((item) => item.foodId!);
+
+  // Meals & recipes: saved recipes plus foods you've added yourself, newest first.
+  const mealChoices: Choice[] = [
+    ...data.recipes
+      .slice()
+      .reverse()
+      .map((recipe) => ({
+        key: `recipe:${recipe.id}`,
+        name: recipe.name,
+        foodId: `recipe:${recipe.id}`,
+        perServing: recipe.perServing,
+        multiple: 1,
+      })),
+    ...recent
+      .filter((item) => !item.foodId)
+      .map((item) => ({ key: item.key, name: item.name, perServing: item.perServing, multiple: item.lastServings })),
   ];
-  const options: SearchOption[] = choices.map((choice) => {
-    const spec = amountFor(choice.foodId);
-    const kcal = choice.perServing.calories;
-    return {
-      key: choice.key,
-      name: choice.name,
-      detail: `${formatAmount(spec, spec.base)}${kcal !== undefined ? ` · ${formatValue(kcal)} kcal` : ""}`,
-    };
-  });
-  const pickedChoice = choices.find((choice) => choice.key === picked);
+
+  const choices = mode === "foods" ? foodChoices : mealChoices;
+  const options = choices.map(toOption);
+  const emptyOptions =
+    mode === "foods"
+      ? recentFoodKeys.map((key) => options.find((option) => option.key === key)).filter((option): option is SearchOption => Boolean(option))
+      : options;
+  const pickedChoice = [...foodChoices, ...mealChoices].find((choice) => choice.key === picked);
 
   function addOwn(name: string) {
     setOwnName(name);
-    requestAnimationFrame(() => {
-      const custom = document.getElementById("custom") as HTMLDetailsElement | null;
-      if (custom) custom.open = true;
-      custom?.scrollIntoView({ behavior: "smooth", block: "start" });
-      document.getElementById("custom-calories")?.focus({ preventScroll: true });
-    });
+    setExtra("own");
+    requestAnimationFrame(() => document.getElementById("custom-calories")?.focus());
   }
 
+  const modeButton = (value: Mode, label: string) => (
+    <button
+      type="button"
+      aria-pressed={mode === value}
+      onClick={() => {
+        setMode(value);
+        setPicked(null);
+      }}
+      className={`min-h-11 flex-1 rounded-full px-4 text-sm font-bold ${
+        mode === value ? "bg-soil text-paper" : "text-soil hover:bg-track"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <div className="flex flex-col gap-5">
-      <Card className="flex flex-col gap-4">
-        <h2 className="font-display text-xl font-extrabold">Add food to {isToday ? "today" : formatDay(date)}</h2>
-        <FoodSearch options={options} onPick={setPicked} onAddOwn={addOwn} />
+    <Card className="flex flex-col gap-4">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
+      >
+        <PlusIcon width={20} height={20} strokeWidth={2.25} className={`transition-transform ${open ? "rotate-45" : ""}`} />
+        {open ? "Close" : `Add food to ${dayLabel}`}
+      </button>
+
+      <div id={panelId} hidden={!open} className="flex flex-col gap-4">
+        <div role="group" aria-label="What to search" className="flex gap-1 rounded-full border-[1.5px] border-field bg-white p-1">
+          {modeButton("foods", "Foods")}
+          {modeButton("meals", "Meals & recipes")}
+        </div>
+
+        {open && (
+          <FoodSearch
+            key={mode}
+            autoFocus
+            label={mode === "foods" ? "Search foods" : "Search your meals and recipes"}
+            placeholder={mode === "foods" ? "Try “eggs” or “rice”" : mealChoices.length ? "Type a name, or pick one below" : "No saved meals yet"}
+            options={options}
+            emptyOptions={emptyOptions}
+            onPick={setPicked}
+            onAddOwn={addOwn}
+          />
+        )}
+
         {pickedChoice && (
           <div className="rounded-field border-[1.5px] border-leaf px-3">
             <div className="flex items-center justify-between pt-2">
-              <span className="text-xs font-bold uppercase tracking-[0.08em] text-leaf">Add this food</span>
+              <span className="text-xs font-bold uppercase tracking-[0.08em] text-leaf">Add to {dayLabel}</span>
               <button type="button" onClick={() => setPicked(null)} className="text-sm font-bold text-leaf underline underline-offset-[3px]">
                 Clear
               </button>
@@ -103,62 +166,35 @@ export function AddFoodPanel({ data, date, today }: { data: SavedData; date: str
             </ul>
           </div>
         )}
-      </Card>
 
-      <Card>
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display text-xl font-extrabold">Your recipes</h2>
-          <Link href="/recipes" className="text-sm font-bold text-leaf underline underline-offset-[3px]">
-            Add a recipe
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold">
+          <button
+            type="button"
+            aria-expanded={extra === "browse"}
+            onClick={() => setExtra(extra === "browse" ? null : "browse")}
+            className="text-leaf underline underline-offset-[3px]"
+          >
+            Browse all foods
+          </button>
+          <button
+            type="button"
+            aria-expanded={extra === "own"}
+            onClick={() => setExtra(extra === "own" ? null : "own")}
+            className="text-leaf underline underline-offset-[3px]"
+          >
+            Add your own food
+          </button>
+          <Link href="/recipes" className="text-leaf underline underline-offset-[3px]">
+            New recipe
           </Link>
         </div>
-        {recipeChoices.length === 0 ? (
-          <p className="pt-2 text-[15px] text-muted">Paste a recipe or build one from ingredients, then log it by the serving.</p>
-        ) : (
-          <ul className="divide-y divide-line">
-            {recipeChoices.map((choice) => (
-              <FoodRow
-                key={choice.key}
-                name={choice.name}
-                spec={RECIPE_SERVINGS}
-                perBase={choice.perServing}
-                onAdd={(multiple) => add(choice, multiple)}
-              />
-            ))}
-          </ul>
-        )}
-      </Card>
 
-      {recent.length > 0 && (
-        <Card>
-          <h2 className="font-display text-xl font-extrabold">Recent</h2>
-          <ul className="divide-y divide-line">
-            {recent.map((food) => (
-              <FoodRow
-                key={food.key}
-                name={food.name}
-                spec={amountFor(food.foodId)}
-                perBase={food.perServing}
-                defaultMultiple={food.lastServings}
-                onAdd={(multiple) => add(food, multiple)}
-              />
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      <Card>
-        <details className="group">
-          <summary className="flex min-h-11 cursor-pointer items-center justify-between font-display text-xl font-extrabold">
-            Browse common foods
-            <span className="font-sans text-sm font-bold text-leaf group-open:hidden">Show</span>
-            <span className="hidden font-sans text-sm font-bold text-leaf group-open:inline">Hide</span>
-          </summary>
-          {CATEGORY_ORDER.map((category) => {
+        {extra === "browse" &&
+          CATEGORY_ORDER.map((category) => {
             const foods = FOODS.filter((food) => categoryOf(food) === category);
             if (foods.length === 0) return null;
             return (
-              <section key={category} className="pt-3">
+              <section key={category}>
                 <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-leaf">{category}</h3>
                 <ul className="divide-y divide-line">
                   {foods.map((food) => (
@@ -175,28 +211,26 @@ export function AddFoodPanel({ data, date, today }: { data: SavedData; date: str
               </section>
             );
           })}
-        </details>
-      </Card>
 
-      <Card>
-        <details id="custom" className="group scroll-mt-6">
-          <summary className="flex min-h-11 cursor-pointer items-center justify-between font-display text-xl font-extrabold">
-            Add your own food
-            <span className="font-sans text-sm font-bold text-leaf group-open:hidden">Show</span>
-            <span className="hidden font-sans text-sm font-bold text-leaf group-open:inline">Hide</span>
-          </summary>
-          <p className="pb-4 pt-1 text-[15px] text-muted">
-            Enter the numbers for one portion of what you ate. Only the name and calories are required.
-          </p>
-          <CustomFoodForm
-            key={ownName}
-            initialName={ownName}
-            date={date}
-            today={today}
-            onAdd={(name, nutrients) => add({ name, perServing: nutrients }, 1)}
-          />
-        </details>
-      </Card>
-    </div>
+        {extra === "own" && (
+          <section className="flex flex-col gap-2 border-t border-line pt-4">
+            <h3 className="font-display text-lg font-extrabold">Add your own food</h3>
+            <p className="pb-2 text-[15px] text-muted">
+              Enter the numbers for one portion of what you ate. Only the name and calories are required.
+            </p>
+            <CustomFoodForm
+              key={ownName}
+              initialName={ownName}
+              date={date}
+              today={today}
+              onAdd={(name, nutrients) => {
+                add({ name, perServing: nutrients }, 1);
+                setExtra(null);
+              }}
+            />
+          </section>
+        )}
+      </div>
+    </Card>
   );
 }

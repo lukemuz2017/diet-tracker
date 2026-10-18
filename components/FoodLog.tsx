@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AddFoodPanel } from "@/components/AddFood";
 import { AmountSelect } from "@/components/FoodRow";
 import { Button } from "@/components/ui/Button";
-import { Card, Eyebrow, PageHeader } from "@/components/ui/Card";
+import { Card, PageHeader } from "@/components/ui/Card";
 import { StickerButton, type StickerTone } from "@/components/ui/Sticker";
 import { CheckIcon } from "@/components/ui/icons";
 import { addFood, changeServings, removeEntry, setDayComplete } from "@/lib/actions";
@@ -49,24 +49,27 @@ export function FoodLog() {
         description={`${weekdayName(date)}, ${formatDay(date).slice(5)}${date === today ? " (today)" : ""}. Forgot a day? Pick it below and fill it in.`}
       />
 
-      <fieldset className="mb-5">
-        <legend className="sr-only">Day to log</legend>
-        <div className="flex flex-wrap gap-2">
-          {days.map((day) => (
-            <button
-              key={day}
-              type="button"
-              aria-pressed={day === date}
-              onClick={() => select(day)}
-              className={`min-h-11 rounded-full px-4 text-sm font-bold ${
-                day === date ? "bg-leaf text-white" : "border-[1.5px] border-field bg-white text-soil hover:bg-track"
-              }`}
-            >
-              {day === today ? "Today" : day === yesterday ? "Yesterday" : formatDay(day)}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <fieldset>
+          <legend className="sr-only">Day to log</legend>
+          <div className="flex flex-wrap gap-2">
+            {days.map((day) => (
+              <button
+                key={day}
+                type="button"
+                aria-pressed={day === date}
+                onClick={() => select(day)}
+                className={`min-h-11 rounded-full px-4 text-sm font-bold ${
+                  day === date ? "bg-leaf text-white" : "border-[1.5px] border-field bg-white text-soil hover:bg-track"
+                }`}
+              >
+                {day === today ? "Today" : day === yesterday ? "Yesterday" : formatDay(day)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <CompleteToggle data={data} date={date} today={today} />
+      </div>
 
       {missedYesterday && (
         <p className="mb-5 max-w-3xl rounded-2xl bg-lemon-tint px-4 py-3 text-[15px]">
@@ -136,7 +139,6 @@ function DaySummary({ data, date, today }: { data: SavedData; date: string; toda
         </>
       )}
 
-      <CompleteDay data={data} date={date} today={today} calories={totals.calories ?? 0} foods={foods} />
     </div>
   );
 }
@@ -210,52 +212,39 @@ function FoodList({ entries, title }: { entries: Entry[]; title: string }) {
   );
 }
 
-function CompleteDay({
-  data,
-  date,
-  today,
-  calories,
-  foods,
-}: {
-  data: SavedData;
-  date: string;
-  today: string;
-  calories: number;
-  foods: number;
-}) {
+/**
+ * One on/off button: "Mark day complete" / "Day complete". Shown for today,
+ * and for past days that look half-logged; other past days count on their own.
+ */
+function CompleteToggle({ data, date, today }: { data: SavedData; date: string; today: string }) {
   const marked = data.completeDays.includes(date);
+  const { totals, foods } = totalsFor(data.entries.filter((entry) => entry.date === date));
+  const halfLogged = foods > 0 && (totals.calories ?? 0) < maintenanceCalories(data.profile!, today) * INCOMPLETE_SHARE;
   const isToday = date === today;
-  const halfLogged = foods > 0 && calories < maintenanceCalories(data.profile!, today) * INCOMPLETE_SHARE;
 
-  if (marked) {
-    return (
-      <Card className="flex flex-col gap-2 bg-leaf-tint">
-        <p className="flex items-center gap-2 font-bold">
-          <CheckIcon className="text-leaf" strokeWidth={2.5} /> Day complete
-        </p>
-        <p className="text-[15px]">{isToday ? "Today" : "This day"} counts toward your 7-day numbers.</p>
-        <Button variant="quiet" className="self-start" onClick={() => setDayComplete(date, false)}>
-          Mark as not complete
-        </Button>
-      </Card>
-    );
-  }
-  if (!isToday && !halfLogged) {
-    return foods > 0 ? (
-      <p className="text-sm text-muted">This day counts toward your 7-day numbers.</p>
-    ) : null;
+  if (!isToday && !halfLogged && !marked) {
+    return foods > 0 ? <p className="text-sm text-muted">Counts toward your 7-day numbers</p> : null;
   }
   return (
-    <Card className="flex flex-col gap-3">
-      <Eyebrow>{isToday ? "Done eating for today?" : "This day looks incomplete"}</Eyebrow>
-      <p className="text-[15px]">
-        {isToday
-          ? "Mark the day complete and it joins your 7-day numbers. Otherwise it counts automatically at midnight."
-          : "It’s under 40% of your usual calories, so it’s left out of your 7-day numbers. Add what’s missing, or mark it complete if that’s all you ate."}
-      </p>
-      <Button variant="secondary" className="self-start" onClick={() => setDayComplete(date, true)}>
-        Mark day complete
-      </Button>
-    </Card>
+    <div className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        aria-pressed={marked}
+        onClick={() => setDayComplete(date, !marked)}
+        className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-bold ${
+          marked ? "bg-leaf text-white hover:bg-leaf-dark" : "border-[1.5px] border-soil text-soil hover:bg-track"
+        }`}
+      >
+        {marked && <CheckIcon width={18} height={18} strokeWidth={2.5} />}
+        {marked ? "Day complete" : "Mark day complete"}
+      </button>
+      <span className="text-xs text-muted">
+        {marked
+          ? "Counts toward your 7-day numbers"
+          : isToday
+            ? "Or it counts automatically at midnight"
+            : "Looks half-logged, so it’s left out for now"}
+      </span>
+    </div>
   );
 }
