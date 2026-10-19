@@ -402,11 +402,11 @@ function FoodList({ entries }: { entries: Entry[] }) {
       {entries.map((entry) => {
         const spec = amountFor(entry.foodId);
         return (
-          <li key={entry.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">
+          <li key={entry.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 py-2.5">
             <span className="min-w-0">
-              <b>{entry.name}</b>
+              <b className="block leading-snug">{entry.name}</b>
               {entry.nutrients.calories !== undefined && (
-                <span className="text-muted"> · {formatValue(entry.nutrients.calories)} kcal</span>
+                <span className="block text-sm text-muted">{formatValue(entry.nutrients.calories)} kcal</span>
               )}
             </span>
             <span className="flex items-center gap-2">
