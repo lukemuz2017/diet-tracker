@@ -13,12 +13,14 @@ import { Card, PageHeader } from "@/components/ui/Card";
 import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { changeServings, removeEntry, setDayComplete } from "@/lib/actions";
 import { multipleFor, quantityFor } from "@/lib/amounts";
-import { addDays, formatDay } from "@/lib/dates";
+import { addDays, formatDay, weekdayName } from "@/lib/dates";
 import { amountFor } from "@/lib/foods";
+import { dayHighlights } from "@/lib/highlights";
 import { formatValue, totalsFor } from "@/lib/log";
 import { MEALS, byMeal, mealAt, type Meal } from "@/lib/meals";
 import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { useSavedData, type Entry, type SavedData } from "@/lib/storage";
+import { computeTargets } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
 import { WINDOW_DAYS, dayState, type DayState } from "@/lib/week";
 
@@ -138,8 +140,8 @@ export function FoodLog() {
           <WeekRibbons data={data} profile={data.profile} today={today} onOpenDay={setOpenDay} />
         ) : (
           <div className="flex flex-col gap-5">
-            {days.map((day) => (
-              <DayCard key={day} data={data} date={day} today={today} onAdd={(meal) => openAdd(day, meal)} />
+            {days.map((day, index) => (
+              <DayCard key={day} data={data} date={day} today={today} tilt={TAG_TILTS[index % TAG_TILTS.length]} onAdd={(meal) => openAdd(day, meal)} />
             ))}
           </div>
         )}
@@ -202,6 +204,27 @@ function DayPicker({ date, today, earliest, onPick }: { date: string; today: str
   );
 }
 
+/** Alternating leans for the date tags, so the list looks hand-hung. */
+const TAG_TILTS = [-3, 2, -2, 3, -1.5, 2.5, -2.5];
+
+/**
+ * A kraft price tag with the weekday and date, like the card on a crate at a
+ * market stand. Decorative: the day's heading carries the date in words.
+ */
+function DateTag({ date, tilt }: { date: string; tilt: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="relative w-16 flex-none rounded-[10px_10px_12px_12px] bg-kraft pb-2 pt-3.5 text-center shadow-[2px_3px_0_rgb(31_42_28_/_0.13)]"
+      style={{ transform: `rotate(${tilt}deg)` }}
+    >
+      <span className="absolute left-1/2 top-1.5 size-[7px] -translate-x-1/2 rounded-full bg-paper" />
+      <span className="block text-[11px] font-bold tracking-[0.1em]">{weekdayName(date).slice(0, 3).toUpperCase()}</span>
+      <span className="block font-display text-[28px] font-extrabold leading-none">{Number(date.slice(8))}</span>
+    </div>
+  );
+}
+
 function dayName(day: string, today: string): string {
   if (day === today) return "Today";
   if (day === addDays(today, -1)) return "Yesterday";
@@ -220,12 +243,15 @@ function DayCard({
   date,
   today,
   onAdd,
+  tilt = 0,
   inPanel = false,
 }: {
   data: SavedData;
   date: string;
   today: string;
   onAdd: (meal: Meal) => void;
+  /** Degrees the date tag leans, alternating down the list. */
+  tilt?: number;
   /** In the side panel: no card, and the panel title names the day. */
   inPanel?: boolean;
 }) {
@@ -242,47 +268,70 @@ function DayCard({
   const [seeMore, setSeeMore] = useState(false);
   const detailsId = useId();
   const showDetails = inPanel || seeMore;
+  const { wins, headsUp } = dayHighlights(totals, computeTargets(data.profile!, today));
+  const shortName = date === today ? "Today" : date === addDays(today, -1) ? "Yesterday" : weekdayName(date);
 
   return (
     <Box className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          {!inPanel && <h2 className="font-display text-xl font-extrabold">{dayName(date, today)}</h2>}
-          {showDate && <span className="text-sm text-muted">{formatDay(date)}</span>}
-          {foods > 0 && <span className="text-[15px] font-bold">{formatValue(totals.calories ?? 0)} kcal</span>}
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${chip.className}`}>{chip.text}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {canToggle && (
+      <div className="flex items-start gap-4">
+        {!inPanel && <DateTag date={date} tilt={tilt} />}
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              {!inPanel && (
+                <h2 className="font-display text-xl font-extrabold">
+                  {shortName}
+                  <span className="sr-only">, {formatDay(date)}</span>
+                </h2>
+              )}
+              {inPanel && showDate && <span className="text-sm text-muted">{formatDay(date)}</span>}
+              {foods > 0 && <span className="text-[15px] font-bold">{formatValue(totals.calories ?? 0)} kcal</span>}
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${chip.className}`}>{chip.text}</span>
+            </div>
+            {canToggle && (
+              <button
+                type="button"
+                aria-pressed={marked}
+                onClick={() => setDayComplete(date, !marked)}
+                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-bold ${
+                  marked ? "bg-leaf text-white hover:bg-leaf-dark" : "border-[1.5px] border-soil text-soil hover:bg-track"
+                }`}
+              >
+                {marked && <CheckIcon width={16} height={16} strokeWidth={2.5} />}
+                {marked ? "Day complete" : "Mark complete"}
+              </button>
+            )}
+          </div>
+
+          {/* What the day did well, and at most one heads-up. */}
+          {foods > 0 && (wins.length > 0 || headsUp) && (
+            <ul aria-label="Highlights" className="flex flex-wrap gap-1.5">
+              {wins.map((win) => (
+                <li key={win} className="rounded-full bg-leaf-tint px-2.5 py-0.5 text-[13px] font-bold">
+                  <span aria-hidden="true">✓ </span>
+                  {win}
+                </li>
+              ))}
+              {headsUp && <li className="rounded-full bg-carrot/25 px-2.5 py-0.5 text-[13px] font-bold">{headsUp}</li>}
+            </ul>
+          )}
+
+          {!inPanel && (
             <button
               type="button"
-              aria-pressed={marked}
-              onClick={() => setDayComplete(date, !marked)}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-bold ${
-                marked ? "bg-leaf text-white hover:bg-leaf-dark" : "border-[1.5px] border-soil text-soil hover:bg-track"
-              }`}
+              aria-expanded={seeMore}
+              aria-controls={detailsId}
+              onClick={() => setSeeMore((value) => !value)}
+              className="-ml-1.5 inline-flex min-h-10 items-center gap-1.5 self-start rounded-full px-1.5 text-sm font-bold text-leaf hover:bg-track"
             >
-              {marked && <CheckIcon width={16} height={16} strokeWidth={2.5} />}
-              {marked ? "Day complete" : "Mark complete"}
+              {seeMore ? "See less" : "See more"}
+              <span aria-hidden="true" className={`text-xs transition-transform ${seeMore ? "rotate-180" : ""}`}>
+                ▾
+              </span>
             </button>
           )}
         </div>
       </div>
-
-      {!inPanel && (
-        <button
-          type="button"
-          aria-expanded={seeMore}
-          aria-controls={detailsId}
-          onClick={() => setSeeMore((value) => !value)}
-          className="-ml-1.5 inline-flex min-h-11 items-center gap-1.5 self-start rounded-full px-1.5 text-sm font-bold text-leaf hover:bg-track"
-        >
-          {seeMore ? "See less" : "See more"}
-          <span aria-hidden="true" className={`text-xs transition-transform ${seeMore ? "rotate-180" : ""}`}>
-            ▾
-          </span>
-        </button>
-      )}
 
       {showDetails && (
         <div id={detailsId} className="flex flex-col gap-3">
