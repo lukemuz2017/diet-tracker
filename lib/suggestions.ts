@@ -1,8 +1,7 @@
 // The summary at the top of This week: a verdict in words and up to three
-// things to work on, judged on the 7-day averages. A low nutrient comes with
-// one food to add; a high one names where most of it came from.
+// things to work on, judged on the 7-day averages. Each comes with a gentle
+// suggestion at the food-group level, not a specific food to add.
 
-import { findFood, type Food } from "./foods.ts";
 import { formatValue, NUTRIENT_KEYS, statusFor } from "./log.ts";
 import { NUTRIENTS, type NutrientKey } from "./nutrients.ts";
 import type { Entry } from "./storage.ts";
@@ -11,19 +10,19 @@ import type { WindowSummary } from "./week.ts";
 
 export const MAX_FOCUS = 3;
 
-/** Everyday foods rich in each nutrient, best first (values in lib/foods-data.ts). */
-const FIXES: Record<NutrientKey, string[]> = {
-  calories: ["peanutButter", "almonds", "avocado"],
-  protein: ["chickenBreast", "greekYogurt", "lentils"],
-  carbs: ["brownRice", "oatmeal", "banana"],
-  fat: ["avocado", "almonds", "peanutButter"],
-  fiber: ["blackBeans", "lentils", "chickpeas"],
-  sodium: [],
-  potassium: ["potato", "sweetPotato", "banana"],
-  calcium: ["greekYogurt", "milk", "cheddar"],
-  iron: ["lentils", "spinach", "blackBeans"],
-  vitaminA: ["sweetPotato", "carrots", "spinach"],
-  vitaminC: ["redBellPepper", "orange", "strawberries"],
+/** What to try when a nutrient's average is low: food groups, with everyday examples. */
+const LOW_TIPS: Record<NutrientKey, string> = {
+  calories: "Consider slightly bigger portions or an extra snack, like nuts or yogurt, this week.",
+  protein: "Consider adding protein foods, like beans, eggs, fish or chicken, this week.",
+  carbs: "Consider adding some grains, like rice, oats or whole-wheat bread, this week.",
+  fat: "Consider adding healthy fats, like nuts, avocado or olive oil, this week.",
+  fiber: "Consider adding beans, lentils or whole grains this week.",
+  sodium: "",
+  potassium: "Consider adding potatoes, beans or bananas this week.",
+  calcium: "Consider adding dairy, like yogurt, milk or cheese, this week.",
+  iron: "Consider adding beans, lentils or leafy greens this week.",
+  vitaminA: "Consider adding orange vegetables or leafy greens, like sweet potatoes, carrots or spinach, this week.",
+  vitaminC: "Consider adding fruit or peppers, like oranges, strawberries or bell peppers, this week.",
 };
 
 export interface Focus {
@@ -33,10 +32,8 @@ export interface Focus {
   title: string;
   /** "Averaging 2,420 mg · at least 3,400 mg" */
   detail: string;
-  /** A food to add for a low nutrient. */
-  fix?: Food;
-  /** For a high nutrient: the food that gave the most of it. */
-  topSource?: string;
+  /** A gentle suggestion, in words. */
+  tip: string;
 }
 
 export type Verdict = "waiting" | "balanced" | "mostly" | "work";
@@ -54,6 +51,11 @@ const HEADLINES: Record<Verdict, string> = {
   work: "A few things to work on.",
 };
 
+/** "Carbs are low", "Fiber is low" */
+function verb(label: string): string {
+  return label.endsWith("s") ? "are" : "is";
+}
+
 /** How far off the average is, as a share of the target edge it missed. */
 function distance(value: number, edge: number): number {
   return Math.abs(value - edge) / edge;
@@ -62,7 +64,7 @@ function distance(value: number, edge: number): number {
 export function summarize(summary: WindowSummary, targets: Targets, entries: Entry[]): Summary {
   if (summary.counted === 0) return { verdict: "waiting", headline: HEADLINES.waiting, focus: [] };
 
-  const off: (Focus & { distance: number })[] = [];
+  const off: (Omit<Focus, "tip"> & { distance: number })[] = [];
   let inRange = 0;
   const counted = new Set(summary.days.filter((day) => day.state === "complete").map((day) => day.date));
 
@@ -76,24 +78,21 @@ export function summarize(summary: WindowSummary, targets: Targets, entries: Ent
     if (status.kind === "in-range") {
       inRange++;
     } else if (status.kind === "to-go") {
-      off.push({ key, direction: "low", title: `${label} is low`, detail, distance: distance(value, target.min!) });
+      off.push({ key, direction: "low", title: `${label} ${verb(label)} low`, detail, distance: distance(value, target.min!) });
     } else if (status.kind === "over") {
       const edge = target.max !== undefined && value > target.max ? target.max : target.upper!;
-      off.push({ key, direction: "high", title: `${label} is high`, detail, distance: distance(value, edge) });
+      off.push({ key, direction: "high", title: `${label} ${verb(label)} high`, detail, distance: distance(value, edge) });
     }
   }
 
   off.sort((a, b) => b.distance - a.distance);
-  const used = new Set<string>();
   const focus = off.slice(0, MAX_FOCUS).map(({ key, direction, title, detail }): Focus => {
-    const item = { key, direction, title, detail };
-    if (item.direction === "low") {
-      // A different food for each item, so three fixes aren't the same thing.
-      const id = FIXES[item.key].find((foodId) => !used.has(foodId)) ?? FIXES[item.key][0];
-      if (id) used.add(id);
-      return { ...item, fix: id ? findFood(id) : undefined };
-    }
-    return { ...item, topSource: topSource(entries, counted, item.key) };
+    if (direction === "low") return { key, direction, title, detail, tip: LOW_TIPS[key] };
+    const source = topSource(entries, counted, key);
+    const tip = source
+      ? `Mostly from ${source.split(",")[0].toLowerCase()}. Consider having it a little less often this week.`
+      : "Consider cutting back a little this week.";
+    return { key, direction, title, detail, tip };
   });
 
   const verdict: Verdict = off.length === 0 ? "balanced" : off.length <= 3 && inRange >= off.length * 2 ? "mostly" : "work";

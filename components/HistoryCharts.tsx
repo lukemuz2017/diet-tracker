@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { formatDay } from "@/lib/dates";
 import { formatValue, statusFor } from "@/lib/log";
-import type { Nutrients } from "@/lib/nutrients";
-import { formatTarget, type Target } from "@/lib/targets";
+import { NUTRIENT_GROUPS, NUTRIENTS, type NutrientKey, type Nutrients } from "@/lib/nutrients";
+import { formatTarget, type Target, type Targets } from "@/lib/targets";
 import type { WindowSummary } from "@/lib/week";
 
 // Charts for History (dataviz skill): one measure per chart, recessive grid,
@@ -14,24 +14,72 @@ import type { WindowSummary } from "@/lib/week";
 const STATUS_FILL = { "to-go": "bg-lemon", "in-range": "bg-leaf", over: "bg-carrot", unknown: "bg-track" } as const;
 const STATE_WORDS = { complete: "", open: " · not marked complete, not counted", missed: "" } as const;
 
-/** Calories for each of the 7 days against the calorie range (shaded band). */
-export function CaloriesByDay({ summary, target }: { summary: WindowSummary; target: Target }) {
+/** Where the shaded "good" band sits for a target, and which edges get a label. */
+function bandFor(target: Target, values: number[]) {
+  const reference = target.max ?? target.upper ?? target.min! * 1.5;
+  const top = Math.max(reference, ...values) * 1.12;
+  if (target.kind === "range") return { top, from: target.min!, to: target.max!, edges: [target.min!, target.max!] };
+  if (target.kind === "min") {
+    const to = target.upper !== undefined ? Math.min(target.upper, top) : top;
+    return { top, from: target.min!, to, edges: target.upper !== undefined && target.upper < top ? [target.min!, target.upper] : [target.min!] };
+  }
+  return { top, from: 0, to: target.max!, edges: [target.max!] };
+}
+
+const BAND_WORDS: Record<Target["kind"], string> = { range: "your range", min: "at or above your target", max: "under your limit" };
+
+/** One nutrient for each of the 7 days against its target (shaded band); a menu picks the nutrient. */
+export function NutrientByDay({ summary, targets }: { summary: WindowSummary; targets: Targets }) {
   const [active, setActive] = useState<string | null>(null);
-  const values = summary.days.map((day) => day.totals.calories ?? 0);
-  const top = Math.max(target.max!, ...values) * 1.12;
-  const y = (value: number) => `${(value / top) * 100}%`;
+  const [key, setKey] = useState<NutrientKey>("calories");
+  const selectId = useId();
+  const target = targets[key];
+  const { label, unit } = NUTRIENTS[key];
+  const values = summary.days.map((day) => day.totals[key] ?? 0);
+  const band = bandFor(target, values);
+  const y = (value: number) => `${(value / band.top) * 100}%`;
+  const describe = (day: WindowSummary["days"][number]) => {
+    const value = day.totals[key];
+    return day.foods === 0 ? "not logged" : value === undefined ? "no value logged" : `${formatValue(value)} ${unit}`;
+  };
 
   return (
     <Card className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-display text-xl font-extrabold">Calories by day</h2>
-        <span className="text-[13px] text-muted">Shaded band: your range, {formatTarget("calories", target)}</span>
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div>
+          <h2 className="font-display text-xl font-extrabold">{label} by day</h2>
+          <span className="text-[13px] text-muted">
+            Shaded band: {BAND_WORDS[target.kind]}, {formatTarget(key, target)}
+            {target.upper !== undefined && ` (safe upper limit ${formatValue(target.upper)} ${unit})`}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor={selectId} className="text-sm font-bold">
+            Nutrient
+          </label>
+          <select
+            id={selectId}
+            value={key}
+            onChange={(event) => setKey(event.target.value as NutrientKey)}
+            className="field-box min-h-11 rounded-field border-[1.5px] border-field bg-white px-3 text-[15px]"
+          >
+            {NUTRIENT_GROUPS.map((group) => (
+              <optgroup key={group.title} label={group.title}>
+                {group.keys.map((option) => (
+                  <option key={option} value={option}>
+                    {NUTRIENTS[option].label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="relative h-52 pl-12" aria-hidden="true">
         {/* Band and its edge labels */}
-        <div className="absolute inset-x-12 right-0 bg-band/60" style={{ bottom: y(target.min!), height: `calc(${y(target.max!)} - ${y(target.min!)})` }} />
-        {[target.min!, target.max!].map((value) => (
+        <div className="absolute inset-x-12 right-0 bg-band/60" style={{ bottom: y(band.from), height: `calc(${y(band.to)} - ${y(band.from)})` }} />
+        {band.edges.map((value) => (
           <span key={value} className="absolute left-0 w-11 translate-y-1/2 text-right text-[11px] leading-none tabular-nums text-muted" style={{ bottom: y(value) }}>
             {formatValue(value)}
           </span>
@@ -39,22 +87,22 @@ export function CaloriesByDay({ summary, target }: { summary: WindowSummary; tar
         <div className="absolute bottom-0 left-12 right-0 h-px bg-line" />
         <ol className="relative grid h-full grid-cols-7 items-end gap-2">
           {summary.days.map((day) => {
-            const calories = day.totals.calories;
-            const status = statusFor("calories", target, calories).kind;
-            const label = `${formatDay(day.date)}: ${calories === undefined ? "not logged" : `${formatValue(calories)} kcal`}${STATE_WORDS[day.state]}`;
+            const value = day.totals[key];
+            const status = statusFor(key, target, value).kind;
+            const tip = `${formatDay(day.date)}: ${describe(day)}${STATE_WORDS[day.state]}`;
             return (
               <li key={day.date} className="relative flex h-full flex-col justify-end" onMouseEnter={() => setActive(day.date)} onMouseLeave={() => setActive(null)}>
                 {active === day.date && (
                   <span className="absolute bottom-full left-1/2 z-10 mb-1 w-max max-w-48 -translate-x-1/2 rounded-lg bg-soil px-2.5 py-1.5 text-xs text-paper shadow">
-                    {label}
+                    {tip}
                   </span>
                 )}
-                {calories === undefined ? (
+                {value === undefined ? (
                   <span className="mx-auto h-1.5 w-full rounded-full border-[1.5px] border-dashed border-field" />
                 ) : (
                   <span
                     className={`w-full rounded-t-[4px] ${STATUS_FILL[status]} ${day.state !== "complete" ? "opacity-60" : ""}`}
-                    style={{ height: y(calories) }}
+                    style={{ height: y(value) }}
                   />
                 )}
               </li>
@@ -72,23 +120,27 @@ export function CaloriesByDay({ summary, target }: { summary: WindowSummary; tar
       <details>
         <summary className="min-h-11 cursor-pointer content-center text-sm font-bold text-leaf">Show as a table</summary>
         <table className="w-full max-w-md text-[15px]">
-          <caption className="sr-only">Calories by day, {formatDay(summary.start)} to {formatDay(summary.end)}</caption>
+          <caption className="sr-only">
+            {label} by day, {formatDay(summary.start)} to {formatDay(summary.end)}
+          </caption>
           <thead>
             <tr className="text-left text-[13px] text-muted">
               <th scope="col" className="py-1 font-normal">Day</th>
-              <th scope="col" className="py-1 text-right font-normal">Calories</th>
+              <th scope="col" className="py-1 text-right font-normal">
+                {label} ({unit})
+              </th>
               <th scope="col" className="py-1 pl-4 font-normal">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
             {summary.days.map((day) => {
-              const calories = day.totals.calories;
+              const value = day.totals[key];
               return (
                 <tr key={day.date}>
                   <th scope="row" className="py-1.5 text-left font-bold">{formatDay(day.date)}</th>
-                  <td className="py-1.5 text-right tabular-nums">{calories === undefined ? "–" : formatValue(calories)}</td>
+                  <td className="py-1.5 text-right tabular-nums">{value === undefined ? "–" : formatValue(value)}</td>
                   <td className="py-1.5 pl-4 text-[13px]">
-                    {calories === undefined ? "Not logged" : statusFor("calories", target, calories).text}
+                    {day.foods === 0 ? "Not logged" : value === undefined ? "No value logged" : statusFor(key, target, value).text}
                     {STATE_WORDS[day.state]}
                   </td>
                 </tr>

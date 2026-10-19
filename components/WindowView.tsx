@@ -1,6 +1,6 @@
 "use client";
 
-import { CaloriesByDay, MacroSplit } from "@/components/HistoryCharts";
+import { MacroSplit, NutrientByDay } from "@/components/HistoryCharts";
 import { NutrientBar } from "@/components/NutrientBar";
 import { Card } from "@/components/ui/Card";
 import { formatDay } from "@/lib/dates";
@@ -119,7 +119,7 @@ export function WindowView({
 
       {detail === "charts" ? (
         <>
-          {summary.logged > 0 && <CaloriesByDay summary={summary} target={targets.calories} />}
+          {summary.logged > 0 && <NutrientByDay summary={summary} targets={targets} />}
           {summary.counted > 0 && <MacroSplit averages={summary.averages} teen={profileAge(profile, today) <= 18} />}
         </>
       ) : summary.counted === 0 ? (

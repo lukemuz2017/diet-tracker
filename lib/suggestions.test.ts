@@ -50,19 +50,16 @@ test("the furthest-off nutrients come first, at most three", () => {
   assert.equal(result.verdict, "work");
 });
 
-test("a low nutrient gets a food to add, a different one for each item", () => {
-  const result = summarize(window({ ...balanced, potassium: 2000, vitaminA: 400 }), targets, []);
+test("a low nutrient gets a food-group suggestion", () => {
+  const result = summarize(window({ ...balanced, carbs: 100 }), targets, []);
   assert.equal(result.verdict, "mostly");
-  const fixes = result.focus.map((item) => item.fix?.id);
-  assert.equal(new Set(fixes).size, fixes.length);
-  assert.ok(fixes.every(Boolean));
+  assert.match(result.focus[0].tip, /^Consider adding some grains/);
 });
 
-test("a high nutrient names its biggest source instead of a food to add", () => {
+test("a high nutrient's suggestion names its biggest source", () => {
   const result = summarize(window({ ...balanced, sodium: 2600 }), targets, [soup, pizza]);
   assert.equal(result.focus[0].title, "Sodium is high");
-  assert.equal(result.focus[0].fix, undefined);
-  assert.equal(result.focus[0].topSource, "Cheese pizza");
+  assert.match(result.focus[0].tip, /^Mostly from cheese pizza\./);
 });
 
 test("going over a minimum is fine; above a safe upper limit is high", () => {
