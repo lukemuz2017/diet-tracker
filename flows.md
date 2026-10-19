@@ -52,7 +52,7 @@ Shared navigation, shown once setup is done: **This week · History · Targets**
 | `/targets` | Your ranges, each with an ⓘ explanation of how it was calculated |
 | `/log` | **This week.** One page with two tabs, like a profile's segmented control. **Progress:** how many nutrients are in range, the day strip (complete, looks incomplete, not logged, in progress) and each nutrient's 7-day average as a bar against its target. **Foods:** one card per day for the last 7 days with calories, status, foods (amount, Remove), a Mark complete toggle, totals on demand and "+ Add". **+ Add food** in the header opens a panel to add to any of the 7 days: search with a Foods / Meals & recipes toggle |
 | `/week` | Old address; forwards to `/log` |
-| `/history` | Pick a day (defaults to today) to see high-level stats for the 7 days ending on it: how many nutrients were in range, days logged and complete, the 7 day badges, a **Calories by day** bar chart against the calorie range (with a table view), and a **Where your calories came from** split of protein, carbs and fat against their ranges. No food-by-food log |
+| `/history` | Pick a day on an inline month calendar (defaults to today; the 7 days are highlighted) to see high-level stats for the 7 days ending on it: the 7 day badges, a **Calories by day** bar chart against the calorie range (with a table view), and a **Where your calories came from** split of protein, carbs and fat against their ranges. No food-by-food log |
 | `/recipes` | Paste a recipe (reads its per-serving nutrition panel) or build one from ingredients; saved recipes are logged by the serving |
 | `/today` | Old address; forwards to `/log` |
 

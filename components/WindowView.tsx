@@ -11,18 +11,56 @@ import type { SavedData } from "@/lib/storage";
 import { computeTargets, maintenanceCalories } from "@/lib/targets";
 import { summarizeWindow, type DayState } from "@/lib/week";
 
-const DOT: Record<DayState, string> = {
-  complete: "bg-leaf",
-  incomplete: "bg-lemon shadow-[inset_0_0_0_2px_var(--color-soil)]",
-  missed: "border-2 border-field",
-  "in-progress": "border-2 border-dashed border-soil",
-};
 const STATE_LABEL: Record<DayState, string> = {
   complete: "complete",
   incomplete: "looks incomplete",
   missed: "not logged",
   "in-progress": "in progress",
 };
+
+/** A day is marked ✓ when at least this share of its nutrients were in range. */
+const GOOD_DAY_SHARE = 0.8;
+const RING = 2 * Math.PI * 15;
+
+/**
+ * One day's badge: a ring that fills (leaf) with the share of that day's
+ * nutrients in range, a ✓ for a good day, a dashed ring when not logged or
+ * still in progress, and a lemon center when the day looks half-logged.
+ */
+function DayBadge({ state, share }: { state: DayState; share: number | null }) {
+  const dashed = state === "missed" || share === null;
+  return (
+    <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
+      <circle cx="18" cy="18" r="15" fill={state === "incomplete" ? "var(--color-lemon)" : "var(--color-paper)"} />
+      <circle
+        cx="18"
+        cy="18"
+        r="15"
+        fill="none"
+        stroke={dashed ? "var(--color-field)" : "var(--color-track)"}
+        strokeWidth="4"
+        strokeDasharray={dashed ? "3 3" : undefined}
+      />
+      {share !== null && share > 0 && (
+        <circle
+          cx="18"
+          cy="18"
+          r="15"
+          fill="none"
+          stroke="var(--color-leaf)"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={`${share * RING} ${RING}`}
+          transform="rotate(-90 18 18)"
+          opacity={state === "complete" ? 1 : 0.55}
+        />
+      )}
+      {share !== null && share >= GOOD_DAY_SHARE && (
+        <path d="M12 18.5l4 4 8-8.5" fill="none" stroke="var(--color-leaf)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+    </svg>
+  );
+}
 
 /**
  * The 7 days ending on `end`: a score card ("X of 11 nutrients in range",
@@ -44,47 +82,40 @@ export function WindowView({
 }) {
   const targets = computeTargets(profile, today);
   const summary = summarizeWindow(data, end, today, maintenanceCalories(profile, today), targets);
-  const counts = { "in-range": 0, "to-go": 0, over: 0 };
-  if (summary.counted > 0) {
-    for (const key of NUTRIENT_KEYS) {
-      const kind = statusFor(key, targets[key], summary.averages[key]).kind;
-      if (kind !== "unknown") counts[kind] += 1;
-    }
-  }
+  // Per day: the share of nutrients with a value that were in range.
+  const dayShare = summary.days.map((day) => {
+    const known = NUTRIENT_KEYS.filter((key) => day.totals[key] !== undefined);
+    if (known.length === 0) return null;
+    const inRange = known.filter((key) => statusFor(key, targets[key], day.totals[key]).kind === "in-range").length;
+    return { inRange, known: known.length, share: inRange / known.length };
+  });
 
   return (
     <div className="flex max-w-3xl flex-col gap-5">
       <Card className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-[26px] font-extrabold leading-tight">
-              {summary.counted > 0 ? `${counts["in-range"]} of ${NUTRIENT_KEYS.length} nutrients in range` : "No complete days yet"}
-            </h2>
-            {summary.counted > 0 && (
-              <span className="flex flex-wrap gap-2 text-[13px] font-bold">
-                <span className="rounded-full bg-leaf px-2.5 py-0.5 text-white">{counts["in-range"]} in range</span>
-                <span className="rounded-full bg-lemon px-2.5 py-0.5 text-soil">{counts["to-go"]} to go</span>
-                {counts.over > 0 && <span className="rounded-full bg-soil px-2.5 py-0.5 text-paper">{counts.over} over</span>}
-              </span>
-            )}
-          </div>
-          <span className="text-[15px] text-muted">
-            {detail === "charts" && `${formatDay(summary.start)} – ${formatDay(summary.end)} · `}
-            {summary.logged} of 7 days logged · {summary.counted} complete
-          </span>
-        </div>
+        {detail === "charts" && (
+          <h2 className="font-display text-xl font-extrabold">
+            {formatDay(summary.start)} – {formatDay(summary.end)}
+          </h2>
+        )}
         <ol className="grid grid-cols-7 gap-1.5 text-center text-xs text-muted">
-          {summary.days.map((day) => (
-            <li key={day.date} className="flex flex-col items-center gap-1">
-              <span aria-hidden="true" className={`size-7 rounded-full ${DOT[day.state]}`} />
-              <span>{formatDay(day.date).slice(0, 3)}</span>
-              <span className="sr-only">
-                {formatDay(day.date)}: {STATE_LABEL[day.state]}
-              </span>
-            </li>
-          ))}
+          {summary.days.map((day, index) => {
+            const score = dayShare[index];
+            return (
+              <li key={day.date} className="flex flex-col items-center gap-1">
+                <DayBadge state={day.state} share={score?.share ?? null} />
+                <span aria-hidden="true">{formatDay(day.date).slice(0, 3)}</span>
+                <span className="sr-only">
+                  {formatDay(day.date)}: {score ? `${score.inRange} of ${score.known} nutrients in range, ` : ""}
+                  {STATE_LABEL[day.state]}
+                </span>
+              </li>
+            );
+          })}
         </ol>
-        <p className="text-xs text-muted">Filled: complete · Yellow: looks incomplete · Ring: not logged · Dashed: in progress</p>
+        <p className="text-xs text-muted">
+          Green ring: share of that day’s nutrients in range · ✓ mostly in range · Yellow: looks incomplete · Dashed: not logged
+        </p>
       </Card>
 
       {detail === "charts" ? (

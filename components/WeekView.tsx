@@ -1,15 +1,15 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { WeekCalendar } from "@/components/WeekCalendar";
 import { WindowView } from "@/components/WindowView";
 import { PageHeader } from "@/components/ui/Card";
-import { TextField } from "@/components/ui/Field";
 import { useSavedData } from "@/lib/storage";
 import { useToday } from "@/lib/useToday";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** History: the 7-day window ending on any earlier day. */
+/** History: high-level stats for the 7 days ending on any day you pick. */
 export function History() {
   const data = useSavedData();
   const today = useToday();
@@ -25,18 +25,10 @@ export function History() {
   return (
     <>
       {header}
-      <div className="mb-5 flex max-w-3xl flex-col gap-3">
-        <TextField
-          id="history-end"
-          type="date"
-          label="Week ending"
-          max={today}
-          value={end}
-          onChange={(event) => event.target.value && router.replace(`/history?end=${event.target.value}`)}
-          className="max-w-xs"
-        />
+      <div className="grid items-start gap-5 lg:grid-cols-[auto_minmax(0,1fr)]">
+        <WeekCalendar end={end} max={today} onPick={(date) => router.replace(`/history?end=${date}`, { scroll: false })} />
+        <WindowView data={data} profile={data.profile} end={end} today={today} detail="charts" />
       </div>
-      <WindowView data={data} profile={data.profile} end={end} today={today} detail="charts" />
     </>
   );
 }
