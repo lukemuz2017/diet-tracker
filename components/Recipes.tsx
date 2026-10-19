@@ -10,6 +10,7 @@ import { ChoiceField, FieldError, TextField } from "@/components/ui/Field";
 import { addFood, deleteRecipe, saveRecipe } from "@/lib/actions";
 import { formatAmount, quantityFor } from "@/lib/amounts";
 import { FOODS, RECIPE_SERVINGS, amountFor } from "@/lib/foods";
+import { mealAt } from "@/lib/meals";
 import { NUTRIENT_KEYS, emptyCustomFood, formatValue, scaleNutrients, validateCustomFood, type CustomFoodValues } from "@/lib/log";
 import { NUTRIENTS, type NutrientKey, type Nutrients } from "@/lib/nutrients";
 import { parseRecipeText, perServingFromIngredients, type Ingredient, type Recipe } from "@/lib/recipe";
@@ -106,6 +107,7 @@ function LogSaved({ recipe, today }: { recipe: Recipe; today: string }) {
               { name: recipe.name, foodId: `recipe:${recipe.id}`, perServing: recipe.perServing },
               multiple,
               today,
+              mealAt(new Date()),
               `Added ${formatAmount(RECIPE_SERVINGS, multiple)} of ${recipe.name}`,
             );
             router.push("/log");

@@ -15,7 +15,7 @@ import { summarizeWindow, type DayState } from "@/lib/week";
 const CELL: Record<string, string> = {
   "in-range": "bg-leaf",
   "to-go": "bg-lemon",
-  over: "bg-eggplant",
+  over: "bg-carrot",
   unknown: "bg-track",
 };
 const COUNTED: DayState[] = ["complete"];
@@ -137,7 +137,7 @@ export function WeekRibbons({
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-leaf align-[-2px]" />In range that day</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-lemon align-[-2px]" />Under</span>
-        <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-eggplant align-[-2px]" />Over</span>
+        <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-carrot align-[-2px]" />Over</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border-[1.5px] border-dashed border-field align-[-2px]" />Not logged</span>
         <span>Faded: doesn’t count yet. The average is what counts.</span>
       </div>

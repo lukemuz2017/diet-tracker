@@ -11,7 +11,7 @@ import type { WindowSummary } from "@/lib/week";
 // Charts for History (dataviz skill): one measure per chart, recessive grid,
 // status color always paired with words (tooltip, table), and a table view.
 
-const STATUS_FILL = { "to-go": "bg-lemon", "in-range": "bg-leaf", over: "bg-eggplant", unknown: "bg-track" } as const;
+const STATUS_FILL = { "to-go": "bg-lemon", "in-range": "bg-leaf", over: "bg-carrot", unknown: "bg-track" } as const;
 const STATE_WORDS = { complete: "", incomplete: " · looks incomplete, not counted", missed: "", "in-progress": " · in progress, not counted yet" } as const;
 
 /** Calories for each of the 7 days against the calorie range (shaded band). */

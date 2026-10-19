@@ -5,6 +5,7 @@
 import { addDays } from "./dates.ts";
 import { amountFor, findFood } from "./foods.ts";
 import { scaleNutrients } from "./log.ts";
+import { MEALS } from "./meals.ts";
 import type { Entry, SavedData } from "./storage.ts";
 
 export const SAMPLE_PREFIX = "sample-";
@@ -12,7 +13,7 @@ export const SAMPLE_DAYS = 15;
 /** Roughly what the menus below add up to on a full day. */
 const MENU_CALORIES = 2300;
 
-/** [food id, multiple of its base serving] */
+/** [food id, multiple of its base serving]; a day's meals are breakfast, lunch, dinner, snack. */
 type Meal = [string, number][];
 
 const BREAKFASTS: Meal[] = [
@@ -81,19 +82,21 @@ export function sampleEntries(data: SavedData, today: string, calories = MENU_CA
     const date = addDays(today, index - SAMPLE_DAYS);
     if (logged.has(date)) continue;
     sampleMeals(date, index)
-      .flat()
-      .forEach(([foodId, menuServings], n) => {
+      .flatMap((meal, m) => meal.map(([foodId, servings]) => ({ foodId, servings, meal: MEALS[m].value })))
+      .forEach(({ foodId, servings: menuServings, meal }, n) => {
         const servings = portion(foodId, menuServings, scale);
         const food = findFood(foodId);
         if (!food) throw new Error(`Unknown sample food: ${foodId}`);
         entries.push({
           id: `${SAMPLE_PREFIX}${date}-${n}`,
           date,
+          meal,
           name: food.name,
           servings,
           foodId,
           nutrients: scaleNutrients(food.nutrients, servings),
-          createdAt: `${date}T12:00:00.000Z`,
+          // Keeps the logged order within the day.
+          createdAt: `${date}T12:00:${String(n).padStart(2, "0")}.000Z`,
         });
       });
   }

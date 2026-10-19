@@ -15,6 +15,7 @@ import { multipleFor, quantityFor } from "@/lib/amounts";
 import { addDays, formatDay } from "@/lib/dates";
 import { amountFor } from "@/lib/foods";
 import { formatValue, totalsFor } from "@/lib/log";
+import { MEALS, byMeal, mealAt, type Meal } from "@/lib/meals";
 import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { useSavedData, type Entry, type SavedData } from "@/lib/storage";
 import { maintenanceCalories } from "@/lib/targets";
@@ -37,6 +38,7 @@ export function FoodLog() {
   const requestedTab = useSearchParams().get("tab");
   const [tab, setTab] = useState<Tab>(requestedTab === "foods" ? "foods" : "progress");
   const [addDate, setAddDate] = useState<string | null>(null);
+  const [addMeal, setAddMeal] = useState<Meal>("breakfast");
   const [openDay, setOpenDay] = useState<string | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const baseId = useId();
@@ -46,7 +48,9 @@ export function FoodLog() {
   const days = Array.from({ length: WINDOW_DAYS }, (_, i) => addDays(today, -i));
   const firstFood = data.entries.length === 1;
 
-  function openAdd(date: string) {
+  // Opened from a meal's "+ Add", that meal; otherwise a guess from the time of day.
+  function openAdd(date: string, meal: Meal = mealAt(new Date())) {
+    setAddMeal(meal);
     setAddDate(date);
   }
 
@@ -100,8 +104,11 @@ export function FoodLog() {
       <Dialog open={addDate !== null} onClose={() => setAddDate(null)} title="Add food">
         {addDate && (
           <>
-            <DayPicker date={addDate} today={today} earliest={start} onPick={setAddDate} />
-            <AddFoodPanel key={addDate} data={data} date={addDate} today={today} />
+            <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
+              <DayPicker date={addDate} today={today} earliest={start} onPick={setAddDate} />
+              <MealPicker value={addMeal} onChange={setAddMeal} />
+            </div>
+            <AddFoodPanel key={addDate} data={data} date={addDate} meal={addMeal} today={today} />
             <Button className="self-end" onClick={() => setAddDate(null)}>
               Done
             </Button>
@@ -110,7 +117,7 @@ export function FoodLog() {
       </Dialog>
 
       <Dialog open={openDay !== null} onClose={() => setOpenDay(null)} title={openDay ? dayName(openDay, today) : ""} side="right">
-        {openDay && <DayCard data={data} date={openDay} today={today} onAdd={() => openAdd(openDay)} inPanel />}
+        {openDay && <DayCard data={data} date={openDay} today={today} onAdd={(meal) => openAdd(openDay, meal)} inPanel />}
       </Dialog>
 
       {firstFood && (
@@ -132,7 +139,7 @@ export function FoodLog() {
         ) : (
           <div className="flex flex-col gap-5">
             {days.map((day) => (
-              <DayCard key={day} data={data} date={day} today={today} onAdd={() => openAdd(day)} />
+              <DayCard key={day} data={data} date={day} today={today} onAdd={(meal) => openAdd(day, meal)} />
             ))}
           </div>
         )}
@@ -219,7 +226,7 @@ function DayCard({
   data: SavedData;
   date: string;
   today: string;
-  onAdd: () => void;
+  onAdd: (meal: Meal) => void;
   /** In the side panel: no card, and the panel title names the day. */
   inPanel?: boolean;
 }) {
@@ -267,22 +274,12 @@ function DayCard({
               {marked ? "Day complete" : "Mark complete"}
             </button>
           )}
-          <button
-            type="button"
-            onClick={onAdd}
-            aria-label={`Add food to ${dayName(date, today)}`}
-            className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm font-bold text-leaf hover:bg-track"
-          >
-            <PlusIcon width={18} height={18} strokeWidth={2.25} /> Add
-          </button>
         </div>
       </div>
 
-      {foods === 0 ? (
-        <p className="text-[15px] text-muted">Nothing logged{date === today ? " yet" : ""}.</p>
-      ) : (
+      <MealSections entries={entries} onAdd={onAdd} />
+      {foods > 0 && (
         <>
-          <FoodList entries={entries} />
           <details className="group">
             <summary className="min-h-11 cursor-pointer content-center text-sm font-bold text-leaf">
               <span className="group-open:hidden">Show this day’s totals</span>
@@ -315,11 +312,68 @@ function DayCard({
   );
 }
 
+/** A day's foods under Breakfast, Lunch, Dinner and Snacks, each with its own "+ Add". */
+function MealSections({ entries, onAdd }: { entries: Entry[]; onAdd: (meal: Meal) => void }) {
+  return (
+    <div className="flex flex-col gap-1">
+      {byMeal(entries).map((group) => {
+        const kcal = group.entries.reduce((sum, entry) => sum + (entry.nutrients.calories ?? 0), 0);
+        return (
+          <section key={group.meal} aria-label={group.label} className="border-t border-line pt-2 first:border-t-0 first:pt-0">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-leaf">
+                {group.label}
+                {group.entries.length > 0 && <span className="ml-2 normal-case tracking-normal text-muted">{formatValue(kcal)} kcal</span>}
+              </h3>
+              <button
+                type="button"
+                onClick={() => onAdd(group.meal)}
+                aria-label={`Add food to ${group.label.toLowerCase()}`}
+                className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm font-bold text-leaf hover:bg-track"
+              >
+                <PlusIcon width={16} height={16} strokeWidth={2.25} /> Add
+              </button>
+            </div>
+            {group.entries.length > 0 && <FoodList entries={group.entries} />}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Which meal the food goes in: four options, one chosen. */
+function MealPicker({ value, onChange }: { value: Meal; onChange: (meal: Meal) => void }) {
+  const name = useId();
+  return (
+    <fieldset>
+      <legend className="pb-2 text-[15px] font-bold">Meal</legend>
+      <div className="flex flex-wrap gap-2">
+        {MEALS.map((meal) => (
+          <label
+            key={meal.value}
+            className="inline-flex min-h-11 cursor-pointer items-center rounded-full border-[1.5px] border-field bg-white px-4 text-sm font-bold text-soil hover:bg-track has-checked:border-leaf has-checked:bg-leaf has-checked:text-white has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-soil"
+          >
+            <input
+              type="radio"
+              name={name}
+              value={meal.value}
+              checked={value === meal.value}
+              onChange={() => onChange(meal.value)}
+              className="sr-only"
+            />
+            {meal.value === "snack" ? "Snack" : meal.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 function FoodList({ entries }: { entries: Entry[] }) {
-  const ordered = [...entries].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   return (
     <ul className="divide-y divide-line">
-      {ordered.map((entry) => {
+      {entries.map((entry) => {
         const spec = amountFor(entry.foodId);
         return (
           <li key={entry.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">

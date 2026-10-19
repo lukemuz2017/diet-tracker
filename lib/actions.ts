@@ -1,6 +1,7 @@
 "use client";
 
 import { scaleNutrients, withServings } from "./log.ts";
+import type { Meal } from "./meals.ts";
 import type { Nutrients } from "./nutrients.ts";
 import type { Recipe } from "./recipe.ts";
 import { updateData, type Entry } from "./storage.ts";
@@ -14,10 +15,17 @@ function newId(): string {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function addFood(food: { name: string; foodId?: string; perServing: Nutrients }, servings: number, date: string, message: string) {
+export function addFood(
+  food: { name: string; foodId?: string; perServing: Nutrients },
+  servings: number,
+  date: string,
+  meal: Meal,
+  message: string,
+) {
   const entry: Entry = {
     id: newId(),
     date,
+    meal,
     name: food.name,
     servings,
     foodId: food.foodId,

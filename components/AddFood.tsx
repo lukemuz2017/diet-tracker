@@ -10,6 +10,7 @@ import { formatAmount, quantityFor } from "@/lib/amounts";
 import { formatDay } from "@/lib/dates";
 import { CATEGORY_ORDER, FOODS, amountFor, categoryOf } from "@/lib/foods";
 import { formatValue, recentFoods } from "@/lib/log";
+import { MEALS, type Meal } from "@/lib/meals";
 import type { Nutrients } from "@/lib/nutrients";
 import type { SavedData } from "@/lib/storage";
 
@@ -36,7 +37,7 @@ function toOption(choice: Choice): SearchOption {
 // Adding food to one day: a search with a Foods / Meals & recipes toggle,
 // plus links to browse all foods, add your own, or make a recipe. The page's
 // "+ Add food" button opens it.
-export function AddFoodPanel({ data, date, today }: { data: SavedData; date: string; today: string }) {
+export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; date: string; meal: Meal; today: string }) {
   const [mode, setMode] = useState<Mode>("foods");
   const [picked, setPicked] = useState<string | null>(null);
   const [extra, setExtra] = useState<"browse" | "own" | null>(null);
@@ -47,7 +48,8 @@ export function AddFoodPanel({ data, date, today }: { data: SavedData; date: str
   function add(food: { name: string; foodId?: string; perServing: Nutrients }, multiple: number) {
     const spec = amountFor(food.foodId);
     const what = `${formatAmount(spec, quantityFor(spec, multiple))} of ${food.name.toLowerCase()}`;
-    addFood(food, multiple, date, isToday ? `Added ${what}` : `Added ${what} to ${formatDay(date)}`);
+    const mealName = MEALS.find((item) => item.value === meal)!.label.toLowerCase();
+    addFood(food, multiple, date, meal, `Added ${what} to ${isToday ? "" : `${formatDay(date)} `}${mealName}`);
     setPicked(null);
   }
 

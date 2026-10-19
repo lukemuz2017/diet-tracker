@@ -3,6 +3,7 @@
 // until the saved data is known (and never read it while prerendering).
 
 import { useSyncExternalStore } from "react";
+import type { Meal } from "./meals.ts";
 import type { Nutrients } from "./nutrients.ts";
 import { isProfile, type Profile } from "./profile.ts";
 import type { Recipe } from "./recipe.ts";
@@ -13,6 +14,8 @@ export interface Entry {
   date: string;
   name: string;
   servings: number;
+  /** Which meal it was part of. Older entries have none (see lib/meals.ts). */
+  meal?: Meal;
   /** Set when the food came from the built-in list. */
   foodId?: string;
   /** Totals for this entry (servings already applied). */

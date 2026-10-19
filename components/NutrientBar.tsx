@@ -5,10 +5,10 @@ import { formatTarget, type Target } from "@/lib/targets";
 
 // design.md: Nutrient bar. The track shows the target as a band with tick
 // marks at its edges. The fill is lemon below the range, leaf within it and
-// eggplant above it (checked apart for colorblind readers); the chip and
+// carrot above it (checked apart for colorblind readers); the chip and
 // the lines under it say it in words.
 
-const FILL = { "to-go": "bg-lemon", "in-range": "bg-leaf", over: "bg-eggplant", unknown: "bg-track" } as const;
+const FILL = { "to-go": "bg-lemon", "in-range": "bg-leaf", over: "bg-carrot", unknown: "bg-track" } as const;
 
 function scaleMax(target: Target): number {
   if (target.kind === "range") return target.max! * 1.25;
