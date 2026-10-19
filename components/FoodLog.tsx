@@ -239,6 +239,11 @@ function DayCard({
   const Box = inPanel ? "div" : Card;
   const canToggle = foods > 0;
   const showDate = date === today || date === addDays(today, -1);
+  // On the Foods tab a day starts as a one-line card with "See more"; the side
+  // panel shows its meals straight away.
+  const [seeMore, setSeeMore] = useState(false);
+  const detailsId = useId();
+  const showDetails = inPanel || seeMore;
 
   return (
     <Box className="flex flex-col gap-3">
@@ -266,9 +271,25 @@ function DayCard({
         </div>
       </div>
 
-      <MealSections entries={entries} onAdd={onAdd} />
-      {foods > 0 && (
-        <>
+      {!inPanel && (
+        <button
+          type="button"
+          aria-expanded={seeMore}
+          aria-controls={detailsId}
+          onClick={() => setSeeMore((value) => !value)}
+          className="-ml-1.5 inline-flex min-h-11 items-center gap-1.5 self-start rounded-full px-1.5 text-sm font-bold text-leaf hover:bg-track"
+        >
+          {seeMore ? "See less" : "See more"}
+          <span aria-hidden="true" className={`text-xs transition-transform ${seeMore ? "rotate-180" : ""}`}>
+            ▾
+          </span>
+        </button>
+      )}
+
+      {showDetails && (
+        <div id={detailsId} className="flex flex-col gap-3">
+          <MealSections entries={entries} onAdd={onAdd} />
+          {foods > 0 && (
           <details className="group">
             <summary className="min-h-11 cursor-pointer content-center text-sm font-bold text-leaf">
               <span className="group-open:hidden">Show this day’s totals</span>
@@ -295,7 +316,8 @@ function DayCard({
               </tbody>
             </table>
           </details>
-        </>
+          )}
+        </div>
       )}
     </Box>
   );
