@@ -32,7 +32,7 @@ flowchart LR
     direction TB
     R(["Return visit"]) --> W["Today · /today<br/>Welcome back · 5 of last 7 days logged"]
     W -- "a day was missed" --> M["Missed-day nudge<br/>opens Add food for that date"]
-    W -- "a day looks half-logged" --> I["Looks incomplete<br/>add food or mark complete"]
+    W -- "a logged day isn't marked" --> I["Not complete<br/>doesn't count until you mark it"]
     W --> V["Last 7 days · /week<br/>7-day averages vs. targets<br/>suggestions with a one-tap fix"]
   end
 
@@ -59,9 +59,8 @@ Shared navigation, shown once setup is done: **This week · History · Targets**
 ## How the 7-day window works
 
 - **The 7-day average is what counts; daily ranges are a guide.** Each nutrient is judged on its average over today and the 6 days before. Going out of range on a single day is normal and isn't treated as a miss.
-- **Only complete days count.** A day counts toward the averages once it's complete. The average divides by the number of complete days, and the page says so: "based on 5 of the last 7 days".
-  - **Past days** are complete automatically, unless they look half-logged (under 40% of your maintenance calories). Those are flagged "Looks incomplete", with "Add food" or "Mark complete".
-  - **Today** counts once you tap "Mark day complete", or automatically once midnight passes. Until then Today shows "today so far" on its own, so a half-eaten morning doesn't drag the averages down.
+- **Only days you mark complete count.** A day is either complete (you tapped "Mark complete") or not complete; nothing is marked for you, past days included. The average divides by the number of complete days.
+  - **Not complete** days (food logged, not marked) show faded and stay out of the averages until you mark them, so a half-logged day never drags the numbers down.
   - **Unlogged days** are gaps, not zeros.
 - **Suggestions refresh daily.** They're calculated from complete days only, so they change at most once a day, never while you're logging.
 - **Weekend vs. weekday trend** looks back 14 days, because 7 days only has 2 weekend days. It needs at least 3 complete weekend days and 5 complete weekdays, and only shows a difference of 20% or more.
@@ -82,7 +81,7 @@ Shared navigation, shown once setup is done: **This week · History · Targets**
 - **Nothing logged yet today:** quick-add foods and a "Log your first meal" action, never a blank page.
 - **First food logged:** an inline "First food logged" message on Today, no pop-up.
 - **Missed day:** on return, "You didn't log Thursday. Add it?" opens `/log` with that date.
-- **Looks incomplete:** a past day under 40% of maintenance calories gets "Add food" or "Mark complete" and is left out of the averages until resolved.
+- **Not complete:** a logged day you haven't marked shows "Not complete" with a Mark complete button, and is left out of the averages until you mark it.
 - **Details changed:** a new weight or activity level recalculates the ranges.
 - **Sample data:** "Load a sample 2 weeks" on `/targets` asks you to confirm on the page, then fills the 15 days before today with example meals from the built-in foods, with portions scaled to your maintenance calories (weekends run salty; one weekday is half-logged, so it reads as incomplete). Days you already logged and today are left alone. Sample entries are marked (`lib/sample.ts`), so "Clear sample data" removes only them. This exists so the week views, trends and suggestions can be shown in class.
 - **Can't save:** if the browser blocks storage (e.g. private browsing), a banner says your data won't be kept.

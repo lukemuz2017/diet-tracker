@@ -6,6 +6,7 @@ import { AddFoodPanel } from "@/components/AddFood";
 import { AmountSelect } from "@/components/FoodRow";
 import { WeekCalendar } from "@/components/WeekCalendar";
 import { WeekRibbons } from "@/components/WeekRibbons";
+import { WeekSummary } from "@/components/WeekSummary";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { Card, PageHeader } from "@/components/ui/Card";
@@ -18,9 +19,8 @@ import { formatValue, totalsFor } from "@/lib/log";
 import { MEALS, byMeal, mealAt, type Meal } from "@/lib/meals";
 import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { useSavedData, type Entry, type SavedData } from "@/lib/storage";
-import { maintenanceCalories } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
-import { INCOMPLETE_SHARE, WINDOW_DAYS, type DayState } from "@/lib/week";
+import { WINDOW_DAYS, dayState, type DayState } from "@/lib/week";
 
 type Tab = "progress" | "foods";
 const TABS: { value: Tab; label: string }[] = [
@@ -64,6 +64,8 @@ export function FoodLog() {
   return (
     <div className="max-w-4xl">
       <PageHeader title="This week" description={`${formatDay(start)} – ${formatDay(today)}`} />
+
+      <WeekSummary data={data} profile={data.profile} today={today} />
 
       {/* The view toggle and Add food share one row. */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -210,9 +212,8 @@ function dayName(day: string, today: string): string {
 
 const STATE_CHIP: Record<DayState, { text: string; className: string }> = {
   complete: { text: "Complete", className: "bg-leaf text-white" },
-  incomplete: { text: "Looks incomplete", className: "bg-lemon text-soil" },
+  open: { text: "Not complete", className: "border-[1.5px] border-soil text-soil" },
   missed: { text: "Not logged", className: "border-[1.5px] border-dashed border-muted text-muted" },
-  "in-progress": { text: "In progress", className: "border-[1.5px] border-soil text-soil" },
 };
 
 /** One day on the Foods tab: name, calories, status, its foods, and actions. */
@@ -233,22 +234,10 @@ function DayCard({
   const entries = data.entries.filter((entry) => entry.date === date);
   const { totals, known, foods } = totalsFor(entries);
   const marked = data.completeDays.includes(date);
-  const halfLogged = foods > 0 && (totals.calories ?? 0) < maintenanceCalories(data.profile!, today) * INCOMPLETE_SHARE;
-  const state: DayState =
-    foods === 0
-      ? date === today
-        ? "in-progress"
-        : "missed"
-      : marked
-        ? "complete"
-        : date === today
-          ? "in-progress"
-          : halfLogged
-            ? "incomplete"
-            : "complete";
+  const state: DayState = dayState(foods, marked);
   const chip = STATE_CHIP[state];
   const Box = inPanel ? "div" : Card;
-  const canToggle = foods > 0 && (date === today || halfLogged || marked);
+  const canToggle = foods > 0;
   const showDate = date === today || date === addDays(today, -1);
 
   return (

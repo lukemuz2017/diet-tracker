@@ -12,7 +12,7 @@ import type { WindowSummary } from "@/lib/week";
 // status color always paired with words (tooltip, table), and a table view.
 
 const STATUS_FILL = { "to-go": "bg-lemon", "in-range": "bg-leaf", over: "bg-carrot", unknown: "bg-track" } as const;
-const STATE_WORDS = { complete: "", incomplete: " · looks incomplete, not counted", missed: "", "in-progress": " · in progress, not counted yet" } as const;
+const STATE_WORDS = { complete: "", open: " · not marked complete, not counted", missed: "" } as const;
 
 /** Calories for each of the 7 days against the calorie range (shaded band). */
 export function CaloriesByDay({ summary, target }: { summary: WindowSummary; target: Target }) {
@@ -67,7 +67,7 @@ export function CaloriesByDay({ summary, target }: { summary: WindowSummary; tar
           <li key={day.date}>{formatDay(day.date).slice(0, 3)}</li>
         ))}
       </ol>
-      <p className="text-xs text-muted">Faded bars are days that don’t count yet (in progress or looks incomplete).</p>
+      <p className="text-xs text-muted">Faded bars are days not marked complete yet, so they don’t count.</p>
 
       <details>
         <summary className="min-h-11 cursor-pointer content-center text-sm font-bold text-leaf">Show as a table</summary>

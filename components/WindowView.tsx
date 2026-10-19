@@ -8,14 +8,13 @@ import { NUTRIENT_KEYS, statusFor } from "@/lib/log";
 import { NUTRIENT_GROUPS } from "@/lib/nutrients";
 import { profileAge, type Profile } from "@/lib/profile";
 import type { SavedData } from "@/lib/storage";
-import { computeTargets, maintenanceCalories } from "@/lib/targets";
+import { computeTargets } from "@/lib/targets";
 import { summarizeWindow, type DayState } from "@/lib/week";
 
 const STATE_LABEL: Record<DayState, string> = {
   complete: "complete",
-  incomplete: "looks incomplete",
+  open: "not marked complete",
   missed: "not logged",
-  "in-progress": "in progress",
 };
 
 /** A day is marked ✓ when at least this share of its nutrients were in range. */
@@ -24,14 +23,14 @@ const RING = 2 * Math.PI * 15;
 
 /**
  * One day's badge: a ring that fills (leaf) with the share of that day's
- * nutrients in range, a ✓ for a good day, a dashed ring when not logged or
- * still in progress, and a lemon center when the day looks half-logged.
+ * nutrients in range, a ✓ for a good day, faded until the day is marked
+ * complete, and a dashed ring when nothing is logged.
  */
 export function DayBadge({ state, share }: { state: DayState; share: number | null }) {
   const dashed = state === "missed" || share === null;
   return (
     <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
-      <circle cx="18" cy="18" r="15" fill={state === "incomplete" ? "var(--color-lemon)" : "var(--color-paper)"} />
+      <circle cx="18" cy="18" r="15" fill="var(--color-paper)" />
       <circle
         cx="18"
         cy="18"
@@ -81,7 +80,7 @@ export function WindowView({
   detail?: "bars" | "charts";
 }) {
   const targets = computeTargets(profile, today);
-  const summary = summarizeWindow(data, end, today, maintenanceCalories(profile, today), targets);
+  const summary = summarizeWindow(data, end, targets);
   // Per day: the share of nutrients with a value that were in range.
   const dayShare = summary.days.map((day) => {
     const known = NUTRIENT_KEYS.filter((key) => day.totals[key] !== undefined);
@@ -114,7 +113,7 @@ export function WindowView({
           })}
         </ol>
         <p className="text-xs text-muted">
-          Green ring: share of that day’s nutrients in range · ✓ mostly in range · Yellow: looks incomplete · Dashed: not logged
+          Green ring: share of that day’s nutrients in range · ✓ mostly in range · Faded: not marked complete · Dashed: not logged
         </p>
       </Card>
 

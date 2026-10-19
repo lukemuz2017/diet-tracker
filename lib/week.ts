@@ -8,10 +8,12 @@ import type { Entry } from "./storage.ts";
 import type { Targets } from "./targets.ts";
 
 export const WINDOW_DAYS = 7;
-/** A logged day under this share of maintenance calories looks half-logged. */
-export const INCOMPLETE_SHARE = 0.4;
 
-export type DayState = "complete" | "incomplete" | "missed" | "in-progress";
+/**
+ * A day counts only once the person marks it complete. "open" has food logged
+ * but isn't marked; "missed" has nothing logged.
+ */
+export type DayState = "complete" | "open" | "missed";
 
 export interface WindowDay {
   date: string;
@@ -37,24 +39,20 @@ export function windowDates(end: string): string[] {
   return Array.from({ length: WINDOW_DAYS }, (_, i) => addDays(end, i - (WINDOW_DAYS - 1)));
 }
 
-function dayState(date: string, foods: number, calories: number, markedComplete: boolean, today: string, maintenance: number): DayState {
-  if (foods === 0) return date === today ? "in-progress" : "missed";
-  if (markedComplete) return "complete";
-  if (date >= today) return "in-progress";
-  return calories < maintenance * INCOMPLETE_SHARE ? "incomplete" : "complete";
+export function dayState(foods: number, markedComplete: boolean): DayState {
+  if (foods === 0) return "missed";
+  return markedComplete ? "complete" : "open";
 }
 
 export function summarizeWindow(
   data: { entries: Entry[]; completeDays: string[] },
   end: string,
-  today: string,
-  maintenance: number,
   targets: Targets,
 ): WindowSummary {
   const dates = windowDates(end);
   const days: WindowDay[] = dates.map((date) => {
     const { totals, foods } = totalsFor(data.entries.filter((entry) => entry.date === date));
-    const state = dayState(date, foods, totals.calories ?? 0, data.completeDays.includes(date), today, maintenance);
+    const state = dayState(foods, data.completeDays.includes(date));
     return { date, state, totals, foods };
   });
 

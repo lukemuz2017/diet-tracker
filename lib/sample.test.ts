@@ -25,6 +25,13 @@ test("clearing sample data keeps the person's own entries", () => {
   assert.deepEqual(data.entries, [mine]);
 });
 
+test("sample days are marked complete, except the half-logged one", () => {
+  const data = withSample(EMPTY, TODAY);
+  assert.equal(data.completeDays.length, 14);
+  assert.ok(!data.completeDays.includes("2026-10-15"));
+  assert.deepEqual(withoutSample(data).completeDays, []);
+});
+
 test("every sample entry is marked and has calories", () => {
   for (const entry of sampleEntries(EMPTY, TODAY)) {
     assert.ok(isSample(entry));

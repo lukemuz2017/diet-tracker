@@ -9,7 +9,7 @@ import { NUTRIENT_KEYS, formatValue, statusFor } from "@/lib/log";
 import { NUTRIENT_GROUPS, NUTRIENTS, type NutrientKey } from "@/lib/nutrients";
 import type { Profile } from "@/lib/profile";
 import type { SavedData } from "@/lib/storage";
-import { computeTargets, maintenanceCalories } from "@/lib/targets";
+import { computeTargets } from "@/lib/targets";
 import { summarizeWindow, type DayState } from "@/lib/week";
 
 const CELL: Record<string, string> = {
@@ -42,7 +42,7 @@ export function WeekRibbons({
 }) {
   const [expanded, setExpanded] = useState<NutrientKey | null>(null);
   const targets = computeTargets(profile, today);
-  const summary = summarizeWindow(data, today, today, maintenanceCalories(profile, today), targets);
+  const summary = summarizeWindow(data, today, targets);
   const dayLabel = (date: string) => (date === today ? "Today" : formatDay(date).slice(0, 3));
   const dayName = (date: string) => (date === today ? "Today" : date === addDays(today, -1) ? "Yesterday" : formatDay(date));
 
@@ -139,7 +139,7 @@ export function WeekRibbons({
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-lemon align-[-2px]" />Under</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-carrot align-[-2px]" />Over</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border-[1.5px] border-dashed border-field align-[-2px]" />Not logged</span>
-        <span>Faded: doesn’t count yet. The average is what counts.</span>
+        <span>Faded: not marked complete, so it doesn’t count yet.</span>
       </div>
     </div>
   );

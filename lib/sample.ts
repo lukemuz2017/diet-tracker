@@ -43,7 +43,8 @@ const SNACKS: Meal[] = [
 ];
 // Weekends lean on pizza and soda, so sodium runs high and fiber low.
 const WEEKEND_DINNER: Meal = [["cheesePizza", 3], ["cola", 1], ["saladGreens", 1]];
-// A busy day where only breakfast got logged: the app treats it as incomplete.
+// A busy day where only breakfast got logged, so it's left unmarked.
+const LIGHT_DAY_INDEX = 11;
 const LIGHT_DAY: Meal = [["greekYogurt", 1], ["banana", 1], ["granolaBar", 1]];
 
 function weekday(date: string): number {
@@ -52,7 +53,7 @@ function weekday(date: string): number {
 
 /** The meals for one day, picked by its position in the two weeks. */
 export function sampleMeals(date: string, index: number): Meal[] {
-  if (index === 11) return [LIGHT_DAY];
+  if (index === LIGHT_DAY_INDEX) return [LIGHT_DAY];
   const weekend = weekday(date) === 0 || weekday(date) === 6;
   return [
     BREAKFASTS[index % BREAKFASTS.length],
@@ -107,10 +108,21 @@ export function isSample(entry: Entry): boolean {
   return entry.id.startsWith(SAMPLE_PREFIX);
 }
 
+/** Adds the sample meals and marks those days complete (all but the light day). */
 export function withSample(data: SavedData, today: string, calories?: number): SavedData {
-  return { ...data, entries: [...data.entries, ...sampleEntries(data, today, calories)] };
+  const entries = sampleEntries(data, today, calories);
+  const light = addDays(today, LIGHT_DAY_INDEX - SAMPLE_DAYS);
+  const days = [...new Set(entries.map((entry) => entry.date))].filter((date) => date !== light);
+  return {
+    ...data,
+    entries: [...data.entries, ...entries],
+    completeDays: [...new Set([...data.completeDays, ...days])],
+  };
 }
 
+/** Removes the sample meals, and the complete marks on days left with no food. */
 export function withoutSample(data: SavedData): SavedData {
-  return { ...data, entries: data.entries.filter((entry) => !isSample(entry)) };
+  const entries = data.entries.filter((entry) => !isSample(entry));
+  const logged = new Set(entries.map((entry) => entry.date));
+  return { ...data, entries, completeDays: data.completeDays.filter((date) => logged.has(date)) };
 }
