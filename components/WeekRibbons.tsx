@@ -19,7 +19,9 @@ const CELL: Record<string, string> = {
   unknown: "bg-track",
 };
 const COUNTED: DayState[] = ["complete"];
-const GRID = "grid grid-cols-[8.5rem_repeat(7,minmax(2.25rem,1fr))_10rem] items-center gap-x-1.5";
+// The average column: the value right-aligned so numbers line up, then its chip.
+const AVERAGE = "grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-2.5 pl-3";
+const GRID = "grid grid-cols-[8.5rem_repeat(7,minmax(2.25rem,1fr))_15.5rem] items-center gap-x-1.5";
 
 /**
  * Week ribbons: one row per nutrient, a cell per day (in range / under / over
@@ -52,7 +54,7 @@ export function WeekRibbons({
   return (
     <div className="rounded-card bg-paper p-4 sm:p-5">
       <div className="overflow-x-auto">
-        <div className="min-w-[40rem]">
+        <div className="min-w-[46rem]">
           {/* Column headers: each day's badge opens that day. */}
           <div className={`${GRID} pb-2`}>
             <span className="text-xs text-muted">Tap a day or a nutrient</span>
@@ -68,7 +70,9 @@ export function WeekRibbons({
                 <span className={day.date === today ? "font-bold text-soil" : ""}>{dayLabel(day.date)}</span>
               </button>
             ))}
-            <span className="pl-3 text-xs font-bold text-leaf">7-day average</span>
+            <span className={`${AVERAGE} text-xs font-bold text-leaf`}>
+              <span className="col-span-2">7-day average</span>
+            </span>
           </div>
 
           {NUTRIENT_GROUPS.flatMap((group) => group.keys).map((key) => {
@@ -108,16 +112,18 @@ export function WeekRibbons({
                       />
                     );
                   })}
-                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-3 text-sm">
+                  <span className={`${AVERAGE} text-sm`}>
                     {summary.counted > 0 && average !== undefined ? (
                       <>
-                        <b className="tabular-nums">
+                        <b className="whitespace-nowrap text-right tabular-nums">
                           {formatValue(average)} {unit}
                         </b>
-                        <StatusChip status={status.kind}>{status.text}</StatusChip>
+                        <span className="whitespace-nowrap">
+                          <StatusChip status={status.kind}>{status.text}</StatusChip>
+                        </span>
                       </>
                     ) : (
-                      <span className="text-muted">–</span>
+                      <span className="text-right text-muted">–</span>
                     )}
                   </span>
                 </div>

@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { AddFoodPanel } from "@/components/AddFood";
 import { AmountSelect } from "@/components/FoodRow";
+import { WeekCalendar } from "@/components/WeekCalendar";
 import { WeekRibbons } from "@/components/WeekRibbons";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -99,24 +100,7 @@ export function FoodLog() {
       <Dialog open={addDate !== null} onClose={() => setAddDate(null)} title="Add food">
         {addDate && (
           <>
-            <fieldset>
-              <legend className="pb-2 text-[15px] font-bold">Day</legend>
-              <div className="flex flex-wrap gap-2">
-                {days.map((day) => (
-                  <button
-                    key={day}
-                    type="button"
-                    aria-pressed={day === addDate}
-                    onClick={() => setAddDate(day)}
-                    className={`min-h-11 rounded-full px-4 text-sm font-bold ${
-                      day === addDate ? "bg-leaf text-white" : "border-[1.5px] border-field bg-white text-soil hover:bg-track"
-                    }`}
-                  >
-                    {dayName(day, today)}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+            <DayPicker date={addDate} today={today} earliest={start} onPick={setAddDate} />
             <AddFoodPanel key={addDate} data={data} date={addDate} today={today} />
             <Button className="self-end" onClick={() => setAddDate(null)}>
               Done
@@ -153,6 +137,60 @@ export function FoodLog() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The day to add food to: a button showing the day that drops down a month
+ * calendar, limited to today and the 6 days before.
+ */
+function DayPicker({ date, today, earliest, onPick }: { date: string; today: string; earliest: string; onPick: (date: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const calendarId = useId();
+  return (
+    <div
+      className="flex flex-col gap-2"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && open) {
+          // Close just the calendar, not the whole pop-up.
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen(false);
+        }
+      }}
+    >
+      <span className="text-[15px] font-bold">Day</span>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={calendarId}
+        onClick={() => setOpen((value) => !value)}
+        className="flex min-h-12 max-w-xs items-center justify-between gap-3 rounded-field border-[1.5px] border-field bg-white px-3.5 text-left text-base"
+      >
+        <span>
+          <b>{dayName(date, today)}</b>
+          {(date === today || date === addDays(today, -1)) && <span className="text-muted"> · {formatDay(date)}</span>}
+        </span>
+        <span aria-hidden="true" className={`text-muted transition-transform ${open ? "rotate-180" : ""}`}>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div id={calendarId} className="w-full max-w-xs rounded-card border-[1.5px] border-line shadow-sm">
+          <WeekCalendar
+            end={date}
+            min={earliest}
+            max={today}
+            week={false}
+            onPick={(picked) => {
+              onPick(picked);
+              setOpen(false);
+            }}
+          />
+        </div>
+      )}
+      <span className="text-[13px] text-muted">You can fill in today or any of the 6 days before.</span>
     </div>
   );
 }
