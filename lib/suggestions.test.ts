@@ -21,48 +21,74 @@ const targets = {
 
 const balanced = { calories: 2000, protein: 80, carbs: 250, fat: 60, fiber: 30, sodium: 1800, potassium: 3500, calcium: 1100, iron: 10, vitaminA: 950, vitaminC: 100 };
 
-function window(averages: WindowSummary["averages"], counted = 3): WindowSummary {
+/** A window with these averages; `inRangeDays` sets how many of 3 days a nutrient was in range (default 2). */
+function window(averages: WindowSummary["averages"], counted = 3, inRangeDays: Record<string, number> = {}): WindowSummary {
+  const coverage = Object.fromEntries(Object.keys(averages).map((key) => [key, { days: 3, inRange: inRangeDays[key] ?? 2 }]));
   return {
     days: [{ date: "2026-10-18", state: "complete" }],
     counted,
     averages,
+    coverage,
   } as unknown as WindowSummary;
 }
 
 const pizza: Entry = { id: "p", date: "2026-10-18", name: "Cheese pizza", servings: 3, nutrients: { sodium: 1900 }, createdAt: "2026-10-18T19:00:00Z" };
 const soup: Entry = { id: "s", date: "2026-10-18", name: "Soup", servings: 1, nutrients: { sodium: 700 }, createdAt: "2026-10-18T12:00:00Z" };
 
-test("no complete days yet: a waiting message and nothing to work on", () => {
+test("no complete days yet: a waiting message and no tiles", () => {
   const result = summarize(window({}, 0), targets, []);
   assert.equal(result.verdict, "waiting");
-  assert.deepEqual(result.focus, []);
+  assert.deepEqual(result.tiles, []);
 });
 
-test("everything in range is balanced", () => {
-  const result = summarize(window(balanced), targets, []);
-  assert.equal(result.verdict, "balanced");
-  assert.equal(result.focus.length, 0);
-});
-
-test("the furthest-off nutrients come first, at most three", () => {
-  const result = summarize(window({ ...balanced, potassium: 1700, fiber: 20, vitaminC: 80, iron: 7 }), targets, []);
-  assert.deepEqual(result.focus.map((item) => item.key), ["potassium", "fiber", "iron"]);
-  assert.equal(result.verdict, "work");
-});
-
-test("a low nutrient gets a food-group suggestion", () => {
+test("three tiles: going well, could improve, bigger picture", () => {
   const result = summarize(window({ ...balanced, carbs: 100 }), targets, []);
   assert.equal(result.verdict, "mostly");
-  assert.match(result.focus[0].tip, /^Consider adding some grains/);
+  assert.deepEqual(result.tiles.map((tile) => tile.kind), ["good", "improve", "big"]);
 });
 
-test("a high nutrient's suggestion names its biggest source", () => {
+test("going well is the on-track nutrient in range on the most days, harder wins first", () => {
+  assert.equal(summarize(window(balanced), targets, []).tiles[0].title, "Fiber is on track");
+  assert.equal(summarize(window(balanced, 3, { calcium: 3 }), targets, []).tiles[0].title, "Calcium is on track");
+});
+
+test("could improve is the nutrient furthest off, with a food-group suggestion", () => {
+  const result = summarize(window({ ...balanced, potassium: 1700, fiber: 25 }), targets, []);
+  const improve = result.tiles.find((tile) => tile.kind === "improve")!;
+  assert.equal(improve.title, "Potassium is low");
+  assert.ok(improve.tip.includes("**potatoes**"));
+});
+
+test("a high nutrient names its biggest source", () => {
   const result = summarize(window({ ...balanced, sodium: 2600 }), targets, [soup, pizza]);
-  assert.equal(result.focus[0].title, "Sodium is high");
-  assert.match(result.focus[0].tip, /^Mostly from \*\*cheese pizza\*\*\./);
+  const improve = result.tiles.find((tile) => tile.kind === "improve")!;
+  assert.equal(improve.title, "Sodium is high");
+  assert.ok(improve.tip.startsWith("Mostly from **cheese pizza**."));
+});
+
+test("the bigger picture follows the week's pattern", () => {
+  const big = (averages: WindowSummary["averages"]) => summarize(window({ ...balanced, ...averages }), targets, []).tiles.at(-1)!.title;
+  assert.equal(big({ fiber: 15, vitaminC: 40, potassium: 2000 }), "Fill up on produce");
+  assert.equal(big({ calories: 1500, carbs: 110 }), "Fuller days");
+  assert.equal(big({ calories: 2600, sodium: 2600 }), "Ease up on salt");
+  assert.equal(big({}), "Keep it varied");
+});
+
+test("the bigger picture doesn't just repeat the could-improve tile", () => {
+  const result = summarize(window({ ...balanced, sodium: 3000 }), targets, []);
+  assert.equal(result.tiles[1].title, "Sodium is high");
+  assert.equal(result.tiles[2].title, "Keep it varied");
 });
 
 test("going over a minimum is fine; above a safe upper limit is high", () => {
   assert.equal(summarize(window({ ...balanced, fiber: 60 }), targets, []).verdict, "balanced");
-  assert.equal(summarize(window({ ...balanced, calcium: 3000 }), targets, []).focus[0]?.title, "Calcium is high");
+  assert.equal(summarize(window({ ...balanced, calcium: 3000 }), targets, []).tiles[1]?.title, "Calcium is high");
+});
+
+test("going well prefers a food win over staying under the sodium limit", () => {
+  const result = summarize(window(balanced, 3, { sodium: 3 }), targets, [pizza]);
+  assert.equal(result.tiles[0].title, "Fiber is on track");
+  const onlySodium = summarize(window({ sodium: 1500, fiber: 10 }), targets, [pizza]);
+  assert.equal(onlySodium.tiles[0].title, "Sodium is on track");
+  assert.equal(onlySodium.tiles[0].tip, "Keep it up.");
 });
