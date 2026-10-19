@@ -63,12 +63,10 @@ export function FoodLog() {
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="This week" description={`${formatDay(start)} – ${formatDay(today)}`} />
-
-      <WeekSummary data={data} profile={data.profile} today={today} />
+      <WeekSummary data={data} profile={data.profile} today={today} range={`${formatDay(start)} – ${formatDay(today)}`} />
 
       {/* The view toggle and Add food share one row. */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div role="tablist" aria-label="This week" className="flex min-w-0 max-w-md flex-1 gap-1 rounded-full border-[1.5px] border-field bg-white p-1">
           {TABS.map((item, index) => (
             <button

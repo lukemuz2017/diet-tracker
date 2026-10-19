@@ -81,12 +81,12 @@ export function WeekRibbons({
             const open = expanded === key;
             return (
               <Fragment key={key}>
-                <div className={`${GRID} border-t border-line py-1.5`}>
+                <div className={`${GRID} border-t border-line py-1`}>
                   <button
                     type="button"
                     aria-expanded={open}
                     onClick={() => setExpanded(open ? null : key)}
-                    className="flex min-h-9 items-center gap-1.5 rounded-lg pr-2 text-left text-sm font-bold hover:text-leaf"
+                    className="flex min-h-8 items-center gap-1.5 rounded-lg pr-2 text-left text-sm font-bold hover:text-leaf"
                   >
                     <span aria-hidden="true" className={`text-xs text-muted transition-transform ${open ? "rotate-90" : ""}`}>
                       ▸
@@ -105,7 +105,7 @@ export function WeekRibbons({
                         onClick={() => onOpenDay(day.date)}
                         aria-label={`${label}, ${dayName(day.date)}: ${words}`}
                         title={`${dayName(day.date)}: ${words}`}
-                        className={`h-7 rounded-md ${
+                        className={`h-6 rounded-md ${
                           day.foods === 0 ? "border-[1.5px] border-dashed border-field" : CELL[dayStatus.kind]
                         } ${day.foods > 0 && !COUNTED.includes(day.state) ? "opacity-55" : ""}`}
                       />
