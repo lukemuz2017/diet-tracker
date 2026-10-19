@@ -1,12 +1,12 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { formatDay } from "@/lib/dates";
 import { formatValue, statusFor } from "@/lib/log";
 import { NUTRIENT_GROUPS, NUTRIENTS, type NutrientKey, type Nutrients } from "@/lib/nutrients";
 import { formatTarget, type Target, type Targets } from "@/lib/targets";
-import type { WindowSummary } from "@/lib/week";
+import { runningAverages, type WindowSummary } from "@/lib/week";
 
 // Charts for History (dataviz skill): one measure per chart, recessive grid,
 // status color always paired with words (tooltip, table), and a table view.
@@ -28,6 +28,58 @@ function bandFor(target: Target, values: number[]) {
 
 const BAND_WORDS: Record<Target["kind"], string> = { range: "your range", min: "at or above your target", max: "under your limit" };
 
+/** Gap between the day columns (Tailwind gap-2), so the line meets each bar's center. */
+const COLUMN_GAP = 8;
+
+/** The plot's size in pixels, kept current as the page resizes. */
+function useSize<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => setSize({ width: entry.contentRect.width, height: entry.contentRect.height }));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, size] as const;
+}
+
+/**
+ * The running 7-day average drawn over the bars: a 2px line with a paper halo
+ * (it crosses the bars) and a marker per day, labeled at the end.
+ */
+function RunningLine({ running, top, width, height, unit }: { running: (number | undefined)[]; top: number; width: number; height: number; unit: string }) {
+  if (width === 0) return null;
+  const column = (width - COLUMN_GAP * 6) / 7;
+  const points = running.flatMap((value, index) =>
+    value === undefined ? [] : [{ x: index * (column + COLUMN_GAP) + column / 2, y: height - (value / top) * height, value }],
+  );
+  if (points.length === 0) return null;
+  const path = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+  const last = points.at(-1)!;
+  return (
+    <svg className="pointer-events-none absolute bottom-0 left-12 right-0 top-0 overflow-visible" width={width} height={height} aria-hidden="true">
+      <path d={path} fill="none" stroke="var(--color-paper)" strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" />
+      <path d={path} fill="none" stroke="var(--color-soil)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+      {points.map((point) => (
+        <circle key={point.x} cx={point.x} cy={point.y} r={4} fill="var(--color-soil)" stroke="var(--color-paper)" strokeWidth={2} />
+      ))}
+      <text
+        x={last.x}
+        y={last.y - 10}
+        textAnchor="end"
+        className="fill-soil text-[11px] font-bold"
+        stroke="var(--color-paper)"
+        strokeWidth={3}
+        paintOrder="stroke"
+      >
+        avg {formatValue(last.value)} {unit}
+      </text>
+    </svg>
+  );
+}
+
 /** One nutrient for each of the 7 days against its target (shaded band); a menu picks the nutrient. */
 export function NutrientByDay({ summary, targets }: { summary: WindowSummary; targets: Targets }) {
   const [active, setActive] = useState<string | null>(null);
@@ -37,6 +89,8 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
   const { label, unit } = NUTRIENTS[key];
   const values = summary.days.map((day) => day.totals[key] ?? 0);
   const band = bandFor(target, values);
+  const running = runningAverages(summary, key);
+  const [plotRef, plot] = useSize<HTMLOListElement>();
   const y = (value: number) => `${(value / band.top) * 100}%`;
   const describe = (day: WindowSummary["days"][number]) => {
     const value = day.totals[key];
@@ -85,11 +139,12 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
           </span>
         ))}
         <div className="absolute bottom-0 left-12 right-0 h-px bg-line" />
-        <ol className="relative grid h-full grid-cols-7 items-end gap-2">
-          {summary.days.map((day) => {
+        <ol ref={plotRef} className="relative grid h-full grid-cols-7 items-end gap-2">
+          {summary.days.map((day, index) => {
             const value = day.totals[key];
             const status = statusFor(key, target, value).kind;
-            const tip = `${formatDay(day.date)}: ${describe(day)}${STATE_WORDS[day.state]}`;
+            const average = running[index];
+            const tip = `${formatDay(day.date)}: ${describe(day)}${STATE_WORDS[day.state]}${average === undefined ? "" : ` · 7-day average so far ${formatValue(average)} ${unit}`}`;
             return (
               <li key={day.date} className="relative flex h-full flex-col justify-end" onMouseEnter={() => setActive(day.date)} onMouseLeave={() => setActive(null)}>
                 {active === day.date && (
@@ -109,17 +164,27 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
             );
           })}
         </ol>
+        <RunningLine running={running} top={band.top} width={plot.width} height={plot.height} unit={unit} />
       </div>
       <ol className="grid grid-cols-7 gap-2 pl-12 text-center text-xs text-muted" aria-hidden="true">
         {summary.days.map((day) => (
           <li key={day.date}>{formatDay(day.date).slice(0, 3)}</li>
         ))}
       </ol>
-      <p className="text-xs text-muted">Faded bars are days not marked complete yet, so they don’t count.</p>
+      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <svg width="22" height="10" aria-hidden="true">
+            <path d="M1 5h20" stroke="var(--color-soil)" strokeWidth="2" />
+            <circle cx="11" cy="5" r="3.5" fill="var(--color-soil)" />
+          </svg>
+          Line: your 7-day average as the days add up
+        </span>
+        <span>Faded bars: not marked complete, so they don’t count.</span>
+      </p>
 
       <details>
         <summary className="min-h-11 cursor-pointer content-center text-sm font-bold text-leaf">Show as a table</summary>
-        <table className="w-full max-w-md text-[15px]">
+        <table className="w-full max-w-lg text-[15px]">
           <caption className="sr-only">
             {label} by day, {formatDay(summary.start)} to {formatDay(summary.end)}
           </caption>
@@ -129,16 +194,19 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
               <th scope="col" className="py-1 text-right font-normal">
                 {label} ({unit})
               </th>
+              <th scope="col" className="py-1 pl-4 text-right font-normal">Average so far</th>
               <th scope="col" className="py-1 pl-4 font-normal">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {summary.days.map((day) => {
+            {summary.days.map((day, index) => {
               const value = day.totals[key];
+              const average = running[index];
               return (
                 <tr key={day.date}>
                   <th scope="row" className="py-1.5 text-left font-bold">{formatDay(day.date)}</th>
                   <td className="py-1.5 text-right tabular-nums">{value === undefined ? "–" : formatValue(value)}</td>
+                  <td className="py-1.5 pl-4 text-right tabular-nums">{average === undefined ? "–" : formatValue(average)}</td>
                   <td className="py-1.5 pl-4 text-[13px]">
                     {day.foods === 0 ? "Not logged" : value === undefined ? "No value logged" : statusFor(key, target, value).text}
                     {STATE_WORDS[day.state]}

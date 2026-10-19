@@ -59,7 +59,7 @@ test("a low nutrient gets a food-group suggestion", () => {
 test("a high nutrient's suggestion names its biggest source", () => {
   const result = summarize(window({ ...balanced, sodium: 2600 }), targets, [soup, pizza]);
   assert.equal(result.focus[0].title, "Sodium is high");
-  assert.match(result.focus[0].tip, /^Mostly from cheese pizza\./);
+  assert.match(result.focus[0].tip, /^Mostly from \*\*cheese pizza\*\*\./);
 });
 
 test("going over a minimum is fine; above a safe upper limit is high", () => {

@@ -10,19 +10,22 @@ import type { WindowSummary } from "./week.ts";
 
 export const MAX_FOCUS = 3;
 
-/** What to try when a nutrient's average is low: food groups, with everyday examples. */
+/**
+ * What to try when a nutrient's average is low: food groups, with everyday
+ * examples. Foods are wrapped in ** so the page can show them in bold.
+ */
 const LOW_TIPS: Record<NutrientKey, string> = {
-  calories: "Consider slightly bigger portions or an extra snack, like nuts or yogurt, this week.",
-  protein: "Consider adding protein foods, like beans, eggs, fish or chicken, this week.",
-  carbs: "Consider adding some grains, like rice, oats or whole-wheat bread, this week.",
-  fat: "Consider adding healthy fats, like nuts, avocado or olive oil, this week.",
-  fiber: "Consider adding beans, lentils or whole grains this week.",
+  calories: "Consider slightly bigger portions or an extra snack, like **nuts** or **yogurt**, this week.",
+  protein: "Consider adding protein foods, like **beans**, **eggs**, **fish** or **chicken**, this week.",
+  carbs: "Consider adding some grains, like **rice**, **oats** or **whole-wheat bread**, this week.",
+  fat: "Consider adding healthy fats, like **nuts**, **avocado** or **olive oil**, this week.",
+  fiber: "Consider adding **beans**, **lentils** or **whole grains** this week.",
   sodium: "",
-  potassium: "Consider adding potatoes, beans or bananas this week.",
-  calcium: "Consider adding dairy, like yogurt, milk or cheese, this week.",
-  iron: "Consider adding beans, lentils or leafy greens this week.",
-  vitaminA: "Consider adding orange vegetables or leafy greens, like sweet potatoes, carrots or spinach, this week.",
-  vitaminC: "Consider adding fruit or peppers, like oranges, strawberries or bell peppers, this week.",
+  potassium: "Consider adding **potatoes**, **beans** or **bananas** this week.",
+  calcium: "Consider adding dairy, like **yogurt**, **milk** or **cheese**, this week.",
+  iron: "Consider adding **beans**, **lentils** or **leafy greens** this week.",
+  vitaminA: "Consider adding orange vegetables or leafy greens, like **sweet potatoes**, **carrots** or **spinach**, this week.",
+  vitaminC: "Consider adding fruit or peppers, like **oranges**, **strawberries** or **bell peppers**, this week.",
 };
 
 export interface Focus {
@@ -32,7 +35,7 @@ export interface Focus {
   title: string;
   /** "Averaging 2,420 mg · at least 3,400 mg" */
   detail: string;
-  /** A gentle suggestion, in words. */
+  /** A gentle suggestion, in words; foods are wrapped in **. */
   tip: string;
 }
 
@@ -90,7 +93,7 @@ export function summarize(summary: WindowSummary, targets: Targets, entries: Ent
     if (direction === "low") return { key, direction, title, detail, tip: LOW_TIPS[key] };
     const source = topSource(entries, counted, key);
     const tip = source
-      ? `Mostly from ${source.split(",")[0].toLowerCase()}. Consider having it a little less often this week.`
+      ? `Mostly from **${source.split(",")[0].toLowerCase()}**. Consider having it a little less often this week.`
       : "Consider cutting back a little this week.";
     return { key, direction, title, detail, tip };
   });

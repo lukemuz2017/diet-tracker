@@ -78,3 +78,21 @@ export function summarizeWindow(
     coverage,
   };
 }
+
+/**
+ * The 7-day average as it builds up through the window: for each day, the
+ * average of the complete days so far (undefined until one has a value).
+ * Days that don't count leave it where it was. The last value is the average.
+ */
+export function runningAverages(summary: WindowSummary, key: NutrientKey): (number | undefined)[] {
+  let sum = 0;
+  let count = 0;
+  return summary.days.map((day) => {
+    const value = day.totals[key];
+    if (day.state === "complete" && value !== undefined) {
+      sum += value;
+      count++;
+    }
+    return count > 0 ? sum / count : undefined;
+  });
+}

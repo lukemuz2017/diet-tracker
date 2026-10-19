@@ -37,7 +37,10 @@ export function WeekSummary({ data, profile, today }: { data: SavedData; profile
             >
               <b className="text-[15px]">{item.title}</b>
               <span className="text-[13px] text-muted">{item.detail}</span>
-              <span className="mt-1 text-sm">{item.tip}</span>
+              <span className="mt-1 text-sm">
+                {/* Odd parts sit between ** markers: the foods, in bold. */}
+                {item.tip.split("**").map((part, index) => (index % 2 ? <b key={index}>{part}</b> : part))}
+              </span>
             </li>
           ))}
         </ul>
