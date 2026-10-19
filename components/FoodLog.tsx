@@ -301,18 +301,51 @@ function DayCard({
   );
 }
 
-/** A day's foods under Breakfast, Lunch, Dinner and Snacks, each with its own "+ Add". */
+/**
+ * A day's foods under Breakfast, Lunch, Dinner and Snacks, each with its own
+ * "+ Add". Meals start collapsed (name, food count, calories); tap one to see
+ * its foods.
+ */
 function MealSections({ entries, onAdd }: { entries: Entry[]; onAdd: (meal: Meal) => void }) {
+  const [open, setOpen] = useState<Meal[]>([]);
+  const baseId = useId();
+  const toggle = (meal: Meal) => setOpen((meals) => (meals.includes(meal) ? meals.filter((item) => item !== meal) : [...meals, meal]));
+
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col">
       {byMeal(entries).map((group) => {
         const kcal = group.entries.reduce((sum, entry) => sum + (entry.nutrients.calories ?? 0), 0);
+        const count = group.entries.length;
+        const expanded = count > 0 && open.includes(group.meal);
+        const listId = `${baseId}-${group.meal}`;
+        const heading = (
+          <>
+            <span className="text-xs font-bold uppercase tracking-[0.08em] text-leaf">{group.label}</span>
+            <span className="text-[13px] text-muted">
+              {count === 0 ? "Nothing yet" : `${count} ${count === 1 ? "food" : "foods"} · ${formatValue(kcal)} kcal`}
+            </span>
+          </>
+        );
         return (
-          <section key={group.meal} aria-label={group.label} className="border-t border-line pt-2 first:border-t-0 first:pt-0">
+          <section key={group.meal} aria-label={group.label} className="border-t border-line py-1 first:border-t-0">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-leaf">
-                {group.label}
-                {group.entries.length > 0 && <span className="ml-2 normal-case tracking-normal text-muted">{formatValue(kcal)} kcal</span>}
+              <h3 className="min-w-0 flex-1">
+                {count > 0 ? (
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-controls={listId}
+                    onClick={() => toggle(group.meal)}
+                    className="flex min-h-11 w-full items-center gap-2 rounded-lg text-left hover:bg-track/60"
+                  >
+                    <span aria-hidden="true" className={`text-xs text-muted transition-transform ${expanded ? "rotate-90" : ""}`}>
+                      ▸
+                    </span>
+                    {heading}
+                  </button>
+                ) : (
+                  <span className="flex min-h-11 items-center gap-2 pl-5">{heading}</span>
+                )}
               </h3>
               <button
                 type="button"
@@ -323,7 +356,11 @@ function MealSections({ entries, onAdd }: { entries: Entry[]; onAdd: (meal: Meal
                 <PlusIcon width={16} height={16} strokeWidth={2.25} /> Add
               </button>
             </div>
-            {group.entries.length > 0 && <FoodList entries={group.entries} />}
+            {expanded && (
+              <div id={listId} className="pl-5">
+                <FoodList entries={group.entries} />
+              </div>
+            )}
           </section>
         );
       })}
