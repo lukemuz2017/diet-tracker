@@ -145,7 +145,7 @@ export function WeekRibbons({
   );
 }
 
-/** Weekly detail for one nutrient: the bar against its target, each day, and the top foods. */
+/** Weekly detail for one nutrient: the bar against its target, then each day with its top food. */
 function NutrientDetail({
   data,
   nutrientKey,
@@ -159,51 +159,58 @@ function NutrientDetail({
   targets: ReturnType<typeof computeTargets>;
   dayName: (date: string) => string;
 }) {
-  const { unit } = NUTRIENTS[nutrientKey];
-  const inWindow = new Set(summary.days.map((day) => day.date));
-  const byFood = new Map<string, number>();
-  for (const entry of data.entries) {
-    const value = entry.nutrients[nutrientKey];
-    if (!inWindow.has(entry.date) || !value) continue;
-    byFood.set(entry.name, (byFood.get(entry.name) ?? 0) + value);
+  const { label, unit } = NUTRIENTS[nutrientKey];
+
+  // The food that gave the most of this nutrient on each day (same food logged twice adds up).
+  const topByDay = new Map<string, { name: string; value: number }>();
+  for (const day of summary.days) {
+    const byFood = new Map<string, number>();
+    for (const entry of data.entries) {
+      const value = entry.nutrients[nutrientKey];
+      if (entry.date !== day.date || !value) continue;
+      byFood.set(entry.name, (byFood.get(entry.name) ?? 0) + value);
+    }
+    const [name, value] = [...byFood].sort((a, b) => b[1] - a[1])[0] ?? [];
+    if (name !== undefined) topByDay.set(day.date, { name, value: value! });
   }
-  const top = [...byFood].sort((a, b) => b[1] - a[1]).slice(0, 3);
 
   return (
-    <div className="mb-2 grid gap-5 rounded-xl bg-celery/60 p-4 sm:grid-cols-2">
-      <div className="sm:col-span-2">
-        <NutrientBar nutrient={nutrientKey} target={targets[nutrientKey]} value={summary.counted > 0 ? summary.averages[nutrientKey] : undefined} />
-      </div>
-      <div>
-        <h3 className="pb-1 text-xs font-bold uppercase tracking-[0.08em] text-leaf">Each day</h3>
-        <ul className="text-sm">
-          {summary.days.map((day) => (
-            <li key={day.date} className="flex justify-between gap-3 py-0.5">
-              <span>{dayName(day.date)}</span>
-              <span className="tabular-nums text-muted">
-                {day.foods === 0 ? "not logged" : day.totals[nutrientKey] === undefined ? "–" : `${formatValue(day.totals[nutrientKey]!)} ${unit}`}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div>
-        <h3 className="pb-1 text-xs font-bold uppercase tracking-[0.08em] text-leaf">Top sources this week</h3>
-        {top.length === 0 ? (
-          <p className="text-sm text-muted">Nothing logged with this nutrient yet.</p>
-        ) : (
-          <ol className="text-sm">
-            {top.map(([name, value]) => (
-              <li key={name} className="flex justify-between gap-3 py-0.5">
-                <span>{name}</span>
-                <span className="tabular-nums text-muted">
-                  {formatValue(value)} {unit}
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
+    <div className="mb-2 flex flex-col gap-4 rounded-xl bg-celery/60 p-4">
+      <NutrientBar nutrient={nutrientKey} target={targets[nutrientKey]} value={summary.counted > 0 ? summary.averages[nutrientKey] : undefined} />
+      <table className="w-full text-sm">
+        <caption className="sr-only">{label} each day, with the food that gave the most</caption>
+        <thead>
+          <tr className="text-left text-xs font-bold uppercase tracking-[0.08em] text-leaf">
+            <th scope="col" className="pb-1 font-bold">Each day</th>
+            <th scope="col" className="pb-1 text-right font-bold">{label}</th>
+            <th scope="col" className="pb-1 pl-6 font-bold">Top source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {summary.days.map((day) => {
+            const value = day.totals[nutrientKey];
+            const top = topByDay.get(day.date);
+            return (
+              <tr key={day.date}>
+                <th scope="row" className="py-0.5 text-left font-normal">{dayName(day.date)}</th>
+                <td className="py-0.5 text-right tabular-nums text-muted">
+                  {day.foods === 0 ? "not logged" : value === undefined ? "–" : `${formatValue(value)} ${unit}`}
+                </td>
+                <td className="py-0.5 pl-6">
+                  {top ? (
+                    <>
+                      {top.name}
+                      <span className="tabular-nums text-muted"> · {formatValue(top.value)} {unit}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted">–</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
