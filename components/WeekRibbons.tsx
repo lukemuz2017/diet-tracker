@@ -15,13 +15,14 @@ import { summarizeWindow, type DayState } from "@/lib/week";
 const CELL: Record<string, string> = {
   "in-range": "bg-leaf",
   "to-go": "bg-lemon",
-  over: "bg-soil",
+  over: "bg-eggplant",
   unknown: "bg-track",
 };
 const COUNTED: DayState[] = ["complete"];
-// The average column: the value right-aligned so numbers line up, then its chip.
-const AVERAGE = "grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-2.5 pl-3";
-const GRID = "grid grid-cols-[8.5rem_repeat(7,minmax(2.25rem,1fr))_15.5rem] items-center gap-x-1.5";
+const GRID = "grid grid-cols-[8.5rem_repeat(7,minmax(2.25rem,1fr))_9.5rem] items-center gap-x-1.5";
+// The summary column says only where the average stands; the amounts and how
+// far to go are in the nutrient's detail.
+const SUMMARY: Record<string, string> = { "to-go": "Under", "in-range": "In range", over: "Over" };
 
 /**
  * Week ribbons: one row per nutrient, a cell per day (in range / under / over
@@ -54,7 +55,7 @@ export function WeekRibbons({
   return (
     <div className="rounded-card bg-paper p-4 sm:p-5">
       <div className="overflow-x-auto">
-        <div className="min-w-[46rem]">
+        <div className="min-w-[40rem]">
           {/* Column headers: each day's badge opens that day. */}
           <div className={`${GRID} pb-2`}>
             <span className="text-xs text-muted">Tap a day or a nutrient</span>
@@ -70,9 +71,7 @@ export function WeekRibbons({
                 <span className={day.date === today ? "font-bold text-soil" : ""}>{dayLabel(day.date)}</span>
               </button>
             ))}
-            <span className={`${AVERAGE} text-xs font-bold text-leaf`}>
-              <span className="col-span-2">7-day average</span>
-            </span>
+            <span className="pl-3 text-xs font-bold text-leaf">7-day average</span>
           </div>
 
           {NUTRIENT_GROUPS.flatMap((group) => group.keys).map((key) => {
@@ -112,18 +111,19 @@ export function WeekRibbons({
                       />
                     );
                   })}
-                  <span className={`${AVERAGE} text-sm`}>
+                  <span className="pl-3">
                     {summary.counted > 0 && average !== undefined ? (
-                      <>
-                        <b className="whitespace-nowrap text-right tabular-nums">
-                          {formatValue(average)} {unit}
-                        </b>
-                        <span className="whitespace-nowrap">
-                          <StatusChip status={status.kind}>{status.text}</StatusChip>
-                        </span>
-                      </>
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        onClick={() => setExpanded(open ? null : key)}
+                        aria-label={`${label} 7-day average: ${status.text}. ${open ? "Hide" : "Show"} details`}
+                        className="whitespace-nowrap rounded-full"
+                      >
+                        <StatusChip status={status.kind}>{SUMMARY[status.kind]}</StatusChip>
+                      </button>
                     ) : (
-                      <span className="text-right text-muted">–</span>
+                      <span className="text-sm text-muted">–</span>
                     )}
                   </span>
                 </div>
@@ -137,7 +137,7 @@ export function WeekRibbons({
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-leaf align-[-2px]" />In range that day</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-lemon align-[-2px]" />Under</span>
-        <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-soil align-[-2px]" />Over</span>
+        <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-eggplant align-[-2px]" />Over</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border-[1.5px] border-dashed border-field align-[-2px]" />Not logged</span>
         <span>Faded: doesn’t count yet. The average is what counts.</span>
       </div>
