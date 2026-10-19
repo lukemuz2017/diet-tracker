@@ -4,8 +4,9 @@ import { useSearchParams } from "next/navigation";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { AddFoodPanel } from "@/components/AddFood";
 import { AmountSelect } from "@/components/FoodRow";
-import { WindowView } from "@/components/WindowView";
+import { WeekRibbons } from "@/components/WeekRibbons";
 import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
 import { Card, PageHeader } from "@/components/ui/Card";
 import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { changeServings, removeEntry, setDayComplete } from "@/lib/actions";
@@ -26,14 +27,16 @@ const TABS: { value: Tab; label: string }[] = [
 ];
 
 // This week, one page with two views (like a profile's segmented tabs):
-// Progress judges the 7-day averages; Foods lists what was eaten each day.
-// "+ Add food" opens a panel to add to any of the 7 days.
+// Progress shows week ribbons (each nutrient, each day, and the 7-day average
+// that counts); Foods lists what was eaten each day. "+ Add food" opens a
+// pop-up form; clicking a day opens that day in a side panel.
 export function FoodLog() {
   const data = useSavedData();
   const today = useToday();
   const requestedTab = useSearchParams().get("tab");
   const [tab, setTab] = useState<Tab>(requestedTab === "foods" ? "foods" : "progress");
   const [addDate, setAddDate] = useState<string | null>(null);
+  const [openDay, setOpenDay] = useState<string | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const baseId = useId();
   if (!data?.profile || !today) return <PageHeader title="This week" />;
@@ -44,7 +47,6 @@ export function FoodLog() {
 
   function openAdd(date: string) {
     setAddDate(date);
-    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
   }
 
   function onTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -55,7 +57,7 @@ export function FoodLog() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-4xl">
       <PageHeader title="This week" description={`${formatDay(start)} – ${formatDay(today)}`} />
 
       {/* The view toggle and Add food share one row. */}
@@ -85,39 +87,47 @@ export function FoodLog() {
         </div>
         <button
           type="button"
-          aria-expanded={addDate !== null}
-          aria-controls={`${baseId}-add`}
-          onClick={() => (addDate ? setAddDate(null) : openAdd(today))}
+          aria-haspopup="dialog"
+          onClick={() => openAdd(today)}
           className="inline-flex min-h-12 items-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
         >
-          <PlusIcon width={20} height={20} strokeWidth={2.25} className={`transition-transform ${addDate ? "rotate-45" : ""}`} />
-          {addDate ? "Cancel" : "Add food"}
+          <PlusIcon width={20} height={20} strokeWidth={2.25} />
+          Add food
         </button>
       </div>
 
-      {addDate && (
-        <Card id={`${baseId}-add`} className="mb-5 flex flex-col gap-4">
-          <fieldset>
-            <legend className="pb-2 font-display text-xl font-extrabold">Add food to</legend>
-            <div className="flex flex-wrap gap-2">
-              {days.map((day) => (
-                <button
-                  key={day}
-                  type="button"
-                  aria-pressed={day === addDate}
-                  onClick={() => setAddDate(day)}
-                  className={`min-h-11 rounded-full px-4 text-sm font-bold ${
-                    day === addDate ? "bg-leaf text-white" : "border-[1.5px] border-field bg-white text-soil hover:bg-track"
-                  }`}
-                >
-                  {dayName(day, today)}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <AddFoodPanel key={addDate} data={data} date={addDate} today={today} />
-        </Card>
-      )}
+      <Dialog open={addDate !== null} onClose={() => setAddDate(null)} title="Add food">
+        {addDate && (
+          <>
+            <fieldset>
+              <legend className="pb-2 text-[15px] font-bold">Day</legend>
+              <div className="flex flex-wrap gap-2">
+                {days.map((day) => (
+                  <button
+                    key={day}
+                    type="button"
+                    aria-pressed={day === addDate}
+                    onClick={() => setAddDate(day)}
+                    className={`min-h-11 rounded-full px-4 text-sm font-bold ${
+                      day === addDate ? "bg-leaf text-white" : "border-[1.5px] border-field bg-white text-soil hover:bg-track"
+                    }`}
+                  >
+                    {dayName(day, today)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <AddFoodPanel key={addDate} data={data} date={addDate} today={today} />
+            <Button className="self-end" onClick={() => setAddDate(null)}>
+              Done
+            </Button>
+          </>
+        )}
+      </Dialog>
+
+      <Dialog open={openDay !== null} onClose={() => setOpenDay(null)} title={openDay ? dayName(openDay, today) : ""} side="right">
+        {openDay && <DayCard data={data} date={openDay} today={today} onAdd={() => openAdd(openDay)} inPanel />}
+      </Dialog>
 
       {firstFood && (
         <p role="status" className="mb-5 rounded-2xl bg-leaf-tint px-4 py-3 text-[15px]">
@@ -134,7 +144,7 @@ export function FoodLog() {
         className="rounded-card focus-visible:outline-offset-4"
       >
         {tab === "progress" ? (
-          <Progress data={data} today={today} />
+          <WeekRibbons data={data} profile={data.profile} today={today} onOpenDay={setOpenDay} />
         ) : (
           <div className="flex flex-col gap-5">
             {days.map((day) => (
@@ -153,10 +163,6 @@ function dayName(day: string, today: string): string {
   return formatDay(day);
 }
 
-function Progress({ data, today }: { data: SavedData; today: string }) {
-  return <WindowView data={data} profile={data.profile!} end={today} today={today} />;
-}
-
 const STATE_CHIP: Record<DayState, { text: string; className: string }> = {
   complete: { text: "Complete", className: "bg-leaf text-white" },
   incomplete: { text: "Looks incomplete", className: "bg-lemon text-soil" },
@@ -165,7 +171,20 @@ const STATE_CHIP: Record<DayState, { text: string; className: string }> = {
 };
 
 /** One day on the Foods tab: name, calories, status, its foods, and actions. */
-function DayCard({ data, date, today, onAdd }: { data: SavedData; date: string; today: string; onAdd: () => void }) {
+function DayCard({
+  data,
+  date,
+  today,
+  onAdd,
+  inPanel = false,
+}: {
+  data: SavedData;
+  date: string;
+  today: string;
+  onAdd: () => void;
+  /** In the side panel: no card, and the panel title names the day. */
+  inPanel?: boolean;
+}) {
   const entries = data.entries.filter((entry) => entry.date === date);
   const { totals, known, foods } = totalsFor(entries);
   const marked = data.completeDays.includes(date);
@@ -183,14 +202,15 @@ function DayCard({ data, date, today, onAdd }: { data: SavedData; date: string; 
             ? "incomplete"
             : "complete";
   const chip = STATE_CHIP[state];
+  const Box = inPanel ? "div" : Card;
   const canToggle = foods > 0 && (date === today || halfLogged || marked);
   const showDate = date === today || date === addDays(today, -1);
 
   return (
-    <Card className="flex flex-col gap-3">
+    <Box className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h2 className="font-display text-xl font-extrabold">{dayName(date, today)}</h2>
+          {!inPanel && <h2 className="font-display text-xl font-extrabold">{dayName(date, today)}</h2>}
           {showDate && <span className="text-sm text-muted">{formatDay(date)}</span>}
           {foods > 0 && <span className="text-[15px] font-bold">{formatValue(totals.calories ?? 0)} kcal</span>}
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${chip.className}`}>{chip.text}</span>
@@ -253,7 +273,7 @@ function DayCard({ data, date, today, onAdd }: { data: SavedData; date: string; 
           </details>
         </>
       )}
-    </Card>
+    </Box>
   );
 }
 

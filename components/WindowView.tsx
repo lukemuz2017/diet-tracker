@@ -27,7 +27,7 @@ const RING = 2 * Math.PI * 15;
  * nutrients in range, a ✓ for a good day, a dashed ring when not logged or
  * still in progress, and a lemon center when the day looks half-logged.
  */
-function DayBadge({ state, share }: { state: DayState; share: number | null }) {
+export function DayBadge({ state, share }: { state: DayState; share: number | null }) {
   const dashed = state === "missed" || share === null;
   return (
     <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
