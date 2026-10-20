@@ -8,6 +8,7 @@ const links = [
   { href: "/log", label: "This week" },
   { href: "/history", label: "History" },
   { href: "/profile", label: "Profile" },
+  { href: "/faq", label: "FAQ" },
 ] as const;
 
 // Shared navigation: pills in the header on wider screens, a bottom tab bar on

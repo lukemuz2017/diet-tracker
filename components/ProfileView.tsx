@@ -62,9 +62,11 @@ export function ProfileView() {
           </Card>
         ))}
 
-        <p className="max-w-[60ch] text-sm text-muted">
-          Each nutrient is judged on its average over the days you complete in the last week, so a day out of range is
-          normal. These are estimates for maintaining your weight, not medical advice.
+        <p className="text-sm text-muted">
+          Estimates, not medical advice.{" "}
+          <Link href="/faq" className="font-bold text-leaf underline underline-offset-[3px]">
+            How the ranges and averages work
+          </Link>
         </p>
 
         <ButtonLink href="/log" className="min-h-12 self-start px-7 text-[17px]">
