@@ -132,7 +132,6 @@ function DayPicker({ date, today, earliest, onPick }: { date: string; today: str
           />
         </div>
       )}
-      <span className="text-[13px] text-muted">You can fill in any day from {formatDay(earliest)} to today.</span>
     </div>
   );
 }
