@@ -53,7 +53,8 @@ export function FoodSearch({
     : emptyOptions.slice(0, MAX_SUGGESTIONS);
   // When typing, the last row offers adding the typed name as your own food.
   const rows = typed ? [...matches.map((option) => option.key), "__own"] : matches.map((option) => option.key);
-  const showList = open && rows.length > 0;
+  // Suggestions appear only while typing, not when the box is first focused.
+  const showList = open && typed !== "" && rows.length > 0;
   const optionId = (index: number) => `${listId}-${index}`;
 
   function choose(index: number) {
@@ -105,7 +106,6 @@ export function FoodSearch({
             setOpen(true);
             setActive(0);
           }}
-          onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           onKeyDown={onKeyDown}
           className="min-w-0 flex-1 bg-transparent text-base text-soil placeholder:text-muted"
