@@ -82,7 +82,7 @@ const SECTIONS: { title: string; tone: string; questions: { q: string; a: ReactN
     questions: [
       {
         q: "Where do the food numbers come from?",
-        a: "The 41 built-in foods use the US Department of Agriculture’s FoodData Central. You can also add your own food, or save a recipe by pasting its nutrition panel or building it from ingredients. Recipe links can’t be opened, so paste the text.",
+        a: "The 41 built-in foods use the US Department of Agriculture’s FoodData Central. You can also add your own food, or build a recipe from ingredients and log it by the serving.",
       },
       {
         q: "Can I fill in an earlier day?",
