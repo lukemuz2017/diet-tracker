@@ -70,7 +70,7 @@ export function FoodLog() {
         </section>
       ) : (
         <>
-          <DashboardStickers summary={summarizeWindow(data, end, targets)} targets={targets} />
+          <DashboardStickers summary={summarizeWindow(data, end, targets)} />
           <WeekSummary data={data} profile={data.profile} today={today} end={end} range={`${formatDay(start)} – ${formatDay(end)}`} />
           <TodayStrip data={data} today={today} onAdd={() => openAdd(today)} onOpen={() => setOpenDay(today)} />
         </>
