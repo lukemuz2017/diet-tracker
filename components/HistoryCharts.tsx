@@ -144,7 +144,7 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
             const value = day.totals[key];
             const status = statusFor(key, target, value).kind;
             const average = running[index];
-            const tip = `${formatDay(day.date)}: ${describe(day)}${STATE_WORDS[day.state]}${average === undefined ? "" : ` · average so far ${formatValue(average)} ${unit}`}`;
+            const tip = `${formatShortDay(day.date)}: ${describe(day)}${STATE_WORDS[day.state]}${average === undefined ? "" : ` · average so far ${formatValue(average)} ${unit}`}`;
             return (
               <li key={day.date} className="relative flex h-full flex-col justify-end" onMouseEnter={() => setActive(day.date)} onMouseLeave={() => setActive(null)}>
                 {active === day.date && (
