@@ -132,4 +132,5 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
 - 2026-10-20 (bug): a pop-up left open when you navigated (Add food → New recipe) stayed in the browser's top layer over the next page and swallowed clicks, so "Build from ingredients" did nothing. `Dialog` now closes itself when its page is hidden or unmounted.
 - 2026-10-20 (student): in Build from ingredients, picking a food adds it at once (its usual amount); the amount is changed in the Ingredients list. No separate "Add to recipe" step.
 - 2026-10-20 (student): Build from ingredients has just a recipe name and "Add to recipe" search; no servings field. A built recipe is one serving (the whole recipe), and you log half, one or more servings of it. Pasted recipes still read their serving count.
+- 2026-10-20 (student): saving a recipe no longer offers to log it. A recipe is saved for later and appears under Meals & recipes in Add food, where you pick the number of servings eaten.
 - Next: the weekend vs. weekday trend, a mobile layout pass, then deploy to Vercel and run the first-run check.

@@ -1,16 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useId, useState, type FormEvent } from "react";
-import { AmountSelect, FoodRow } from "@/components/FoodRow";
+import { AmountSelect } from "@/components/FoodRow";
 import { FoodSearch, type SearchOption } from "@/components/FoodSearch";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
 import { ChoiceField, FieldError, TextField } from "@/components/ui/Field";
-import { addFood, deleteRecipe, saveRecipe } from "@/lib/actions";
+import { deleteRecipe, saveRecipe } from "@/lib/actions";
 import { formatAmount, multipleFor, quantityFor } from "@/lib/amounts";
-import { FOODS, RECIPE_SERVINGS, amountFor } from "@/lib/foods";
-import { mealAt } from "@/lib/meals";
+import { FOODS, amountFor } from "@/lib/foods";
 import { NUTRIENT_KEYS, emptyCustomFood, formatValue, scaleNutrients, validateCustomFood, type CustomFoodValues } from "@/lib/log";
 import { NUTRIENTS, type NutrientKey, type Nutrients } from "@/lib/nutrients";
 import { parseRecipeText, perServingFromIngredients, type Ingredient, type Recipe } from "@/lib/recipe";
@@ -42,7 +40,11 @@ export function RecipesScreen() {
     <>
       {header}
       <div className="flex max-w-2xl flex-col gap-5">
-        {justSaved && <LogSaved recipe={justSaved} today={today} />}
+        {justSaved && (
+          <p role="status" className="rounded-2xl bg-leaf-tint px-4 py-3 text-[15px]">
+            <b>Saved {justSaved.name}.</b> It’s now in Meals & recipes when you add food.
+          </p>
+        )}
 
         <Card className="flex flex-col gap-5">
           <ChoiceField
@@ -88,33 +90,6 @@ export function RecipesScreen() {
         )}
       </div>
     </>
-  );
-}
-
-/** Right after saving: "How many servings did you eat?" */
-function LogSaved({ recipe, today }: { recipe: Recipe; today: string }) {
-  const router = useRouter();
-  return (
-    <Card className="border-[1.5px] border-leaf">
-      <h2 className="font-display text-xl font-extrabold">Saved. How many servings did you eat?</h2>
-      <ul>
-        <FoodRow
-          name={recipe.name}
-          spec={RECIPE_SERVINGS}
-          perBase={recipe.perServing}
-          onAdd={(multiple) => {
-            addFood(
-              { name: recipe.name, foodId: `recipe:${recipe.id}`, perServing: recipe.perServing },
-              multiple,
-              today,
-              mealAt(new Date()),
-              `Added ${formatAmount(RECIPE_SERVINGS, multiple)} of ${recipe.name}`,
-            );
-            router.push("/log");
-          }}
-        />
-      </ul>
-    </Card>
   );
 }
 
