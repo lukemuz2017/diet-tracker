@@ -18,6 +18,7 @@ The app's visual direction, chosen from four mood boards on Oct 18, 2026. The PD
 | `tomato` | `#C8402A` | Form errors only |
 | `lemon` | `#F2C94C` | "To go" / below a minimum, highlights, stickers |
 | `kraft` | `#C9A27A` | Signature panels, sticker variety, image backgrounds |
+| `kraft-tint` | `#E9DCC8` | Dashboard page background (muted 5.8:1, leaf 4.7:1, soil 11:1) |
 | `line` | `#DDE5CF` | Dividers and card borders |
 | `track` | `#E1E8D6` | Empty part of a bar |
 | `band` | `#B9D3A8` | The target range on a bar |
