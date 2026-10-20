@@ -32,7 +32,7 @@ export const NUTRIENTS: Record<NutrientKey, { label: string; unit: NutrientUnit 
   vitaminC: { label: "Vitamin C", unit: "mg" },
 };
 
-/** How the Targets page groups nutrients. */
+/** How the Profile page groups nutrients. */
 export const NUTRIENT_GROUPS: { title: string; keys: NutrientKey[] }[] = [
   { title: "Energy and macros", keys: ["calories", "protein", "carbs", "fat"] },
   { title: "Get enough of", keys: ["fiber", "potassium", "calcium", "iron", "vitaminA", "vitaminC"] },

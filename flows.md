@@ -15,7 +15,7 @@ flowchart LR
     A(["Open app, nothing saved"]) --> B["Welcome · /<br/>what it does · Get started"]
     B --> C["Your details · /setup<br/>units, height, weight, age, sex, activity<br/>'why we ask' hints"]
     C -- "missing or out-of-range value:<br/>error by the field, input kept" --> C
-    C --> D["Your ranges · /targets<br/>ⓘ explains each range"]
+    C --> D["Your profile · /profile<br/>details + ranges, ⓘ explains each"]
     D --> E["First log · /log<br/>one tap on a common food"]
   end
 
@@ -43,13 +43,13 @@ flowchart LR
 
 ## Routes
 
-Shared navigation, shown once setup is done: **This week · History · Targets**, with the current page marked.
+Shared navigation, shown once setup is done: **This week · History · Profile**, with the current page marked.
 
 | Route | What it's for |
 |---|---|
 | `/` | Welcome card when nothing is saved; goes to the Food log once you're set up |
 | `/setup` | Your details: units, height, weight, date of birth, sex (female, male, non-binary), activity level. Reused, prefilled, to edit them later |
-| `/targets` | Your ranges, each with an ⓘ explanation of how it was calculated |
+| `/profile` | Your profile: your details (with Edit), the maintenance estimate, and your daily ranges, each with an ⓘ explanation. `/targets` forwards here |
 | `/log` | **This week.** Two tabs. **Progress:** week ribbons, one row per nutrient with a cell per day (in range / under / over / not logged) and the 7-day average that counts; the column headers are the day badges. Clicking a day (header or cell) opens that day in a **side panel** (status, Mark complete, foods under Breakfast / Lunch / Dinner / Snacks, collapsed to a food count and calories until tapped, each with a + Add, totals); clicking a nutrient expands its weekly detail (bar against target, then each day with its amount and the food that gave the most). **Foods:** a card per day with a kraft date tag and highlight tags (what the day did well, plus at most one heads-up), collapsed to its calories, status and Mark complete, with "See more" for its meals. **+ Add food** opens a **pop-up form** over a blurred page (a Meal choice, preset from the meal you clicked or the time of day; a Day dropdown that opens a month calendar limited to today and the 6 days before, search with Foods / Meals & recipes) |
 | `/week` | Old address; forwards to `/log` |
 | `/history` | Pick a day on an inline month calendar (defaults to today; the 7 days are highlighted) to see high-level stats for the 7 days ending on it: the 7 day badges, a **Calories by day** bar chart against the calorie range (with a table view), and a **Where your calories came from** split of protein, carbs and fat against their ranges. No food-by-food log |
@@ -83,7 +83,7 @@ Shared navigation, shown once setup is done: **This week · History · Targets**
 - **Missed day:** on return, "You didn't log Thursday. Add it?" opens `/log` with that date.
 - **Not complete:** a logged day you haven't marked shows "Not complete" with a Mark complete button, and is left out of the averages until you mark it.
 - **Details changed:** a new weight or activity level recalculates the ranges.
-- **Sample data:** "Load a sample 2 weeks" on `/targets` asks you to confirm on the page, then fills the 15 days before today with example meals from the built-in foods, with portions scaled to your maintenance calories (weekends run salty; one weekday is half-logged, so it reads as incomplete). Days you already logged and today are left alone. Sample entries are marked (`lib/sample.ts`), so "Clear sample data" removes only them. This exists so the week views, trends and suggestions can be shown in class.
+- **Sample data:** "Load a sample 2 weeks" on `/profile` asks you to confirm on the page, then fills the 15 days before today with example meals from the built-in foods, with portions scaled to your maintenance calories (weekends run salty; one weekday is half-logged, so it reads as incomplete). Days you already logged and today are left alone. Sample entries are marked (`lib/sample.ts`), so "Clear sample data" removes only them. This exists so the week views, trends and suggestions can be shown in class.
 - **Can't save:** if the browser blocks storage (e.g. private browsing), a banner says your data won't be kept.
 - **Setup errors:** next to the field and say what to do, e.g. "Enter a height between 4 ft and 7 ft 6 in". What you typed stays.
 - **Log errors:** food name missing, calories missing, a negative number, or a date in the future. What you typed stays.

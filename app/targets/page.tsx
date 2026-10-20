@@ -1,14 +1,6 @@
-import type { Metadata } from "next";
-import { RequireProfile } from "@/components/Gates";
-import { TargetsView } from "@/components/TargetsView";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Your ranges" };
-
+// Targets became Profile (details plus ranges); keep old links working.
 export default function TargetsPage() {
-  return (
-    <>
-      <RequireProfile />
-      <TargetsView />
-    </>
-  );
+  redirect("/profile");
 }

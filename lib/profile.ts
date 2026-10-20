@@ -64,6 +64,20 @@ export function isProfile(value: unknown): value is Profile {
 }
 
 /** "5 ft 10 in · 160 lb · 34 · male · moderately active" */
+/** The profile as labeled facts, in the units the person chose. */
+export function profileFacts(profile: Profile, today: string): { label: string; value: string }[] {
+  const activity = ACTIVITY_OPTIONS.find((option) => option.value === profile.activity)!;
+  const sex = SEX_OPTIONS.find((option) => option.value === profile.sex)!.label;
+  const { feet, inches } = cmToFeetInches(profile.heightCm);
+  return [
+    { label: "Height", value: profile.units === "us" ? `${feet} ft ${inches} in` : `${Math.round(profile.heightCm)} cm` },
+    { label: "Weight", value: profile.units === "us" ? `${Math.round(profile.weightKg / KG_PER_LB)} lb` : `${trimNumber(profile.weightKg)} kg` },
+    { label: "Age", value: String(profileAge(profile, today)) },
+    { label: "Sex", value: sex },
+    { label: "Activity", value: activity.label },
+  ];
+}
+
 export function describeProfile(profile: Profile, today: string): string {
   const activity = ACTIVITY_OPTIONS.find((option) => option.value === profile.activity)!;
   const sex = SEX_OPTIONS.find((option) => option.value === profile.sex)!.label.toLowerCase();

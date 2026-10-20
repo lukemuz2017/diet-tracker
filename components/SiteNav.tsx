@@ -7,7 +7,7 @@ import { useSavedData } from "@/lib/storage";
 const links = [
   { href: "/log", label: "This week" },
   { href: "/history", label: "History" },
-  { href: "/targets", label: "Targets" },
+  { href: "/profile", label: "Profile" },
 ] as const;
 
 // Shared navigation: pills in the header on wider screens, a bottom tab bar on

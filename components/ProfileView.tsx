@@ -4,19 +4,22 @@ import { useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
 import { InfoButton } from "@/components/ui/InfoButton";
+import { formatValue } from "@/lib/log";
 import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { addDays, formatDay } from "@/lib/dates";
-import { describeProfile } from "@/lib/profile";
+import { profileFacts } from "@/lib/profile";
 import { isSample, SAMPLE_DAYS, withSample, withoutSample } from "@/lib/sample";
 import { updateData, useSavedData, type SavedData } from "@/lib/storage";
 import { showToast } from "@/lib/toast";
 import { useToday } from "@/lib/useToday";
 import { computeTargets, explainTarget, formatTarget, maintenanceCalories } from "@/lib/targets";
 
-export function TargetsView() {
+// Your profile: the details you entered, the maintenance estimate they give,
+// and the daily ranges that follow from them (each with an explanation).
+export function ProfileView() {
   const data = useSavedData();
   const today = useToday();
-  if (!data?.profile || !today) return <PageHeader title="Your ranges" />;
+  if (!data?.profile || !today) return <PageHeader title="Your profile" />;
 
   const { profile } = data;
   const targets = computeTargets(profile, today);
@@ -26,23 +29,37 @@ export function TargetsView() {
     <>
       <PageHeader
         eyebrow={firstVisit ? "Step 2 of 2" : undefined}
-        title="Your ranges"
-        description="What a balanced day looks like for you, to maintain your weight."
+        title="Your profile"
+        description="Your details, and what a balanced day looks like for you at your current weight."
       />
       <div className="flex max-w-2xl flex-col gap-5">
-        <Card className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-          <p className="text-[15px]">
-            <span className="text-muted">Based on </span>
-            <b>{describeProfile(profile, today)}</b>
-          </p>
-          <ButtonLink href="/setup" variant="quiet">
-            Edit details
-          </ButtonLink>
+        <Card className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-xl font-extrabold">Your details</h2>
+            <ButtonLink href="/setup" variant="secondary">
+              Edit details
+            </ButtonLink>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+            {profileFacts(profile, today).map((fact) => (
+              <div key={fact.label}>
+                <dt className="text-xs font-bold uppercase tracking-[0.08em] text-muted">{fact.label}</dt>
+                <dd className="text-[17px] font-bold">{fact.value}</dd>
+              </div>
+            ))}
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-[0.08em] text-muted">Maintenance</dt>
+              <dd className="text-[17px] font-bold">
+                about {formatValue(Math.round(maintenanceCalories(profile, today) / 10) * 10)} kcal a day
+              </dd>
+            </div>
+          </dl>
         </Card>
 
+        <h2 className="-mb-2 mt-2 font-display text-2xl font-extrabold">Your daily ranges</h2>
         {NUTRIENT_GROUPS.map((group) => (
           <Card key={group.title} className="flex flex-col gap-1">
-            <h2 className="font-display text-xl font-extrabold">{group.title}</h2>
+            <h3 className="font-display text-xl font-extrabold">{group.title}</h3>
             <ul className="divide-y divide-line">
               {group.keys.map((key) => {
                 const { label } = NUTRIENTS[key];

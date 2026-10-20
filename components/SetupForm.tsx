@@ -65,7 +65,7 @@ export function SetupForm({ saved, today }: { saved: Profile | null; today: stri
     }
     const profile = result.profile;
     updateData((data) => ({ ...data, profile }));
-    router.push("/targets");
+    router.push("/profile");
   }
 
   const us = values.units === "us";
