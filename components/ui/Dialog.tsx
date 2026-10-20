@@ -26,6 +26,11 @@ export function Dialog({
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
+    // Next keeps the page you left mounted but hidden, so close on the way out:
+    // a modal left open stays in the top layer and blocks the next page.
+    return () => {
+      if (dialog.open) dialog.close();
+    };
   }, [open]);
 
   const shape =
