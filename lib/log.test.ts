@@ -24,12 +24,12 @@ test("changing servings scales an entry and keeps unknowns unknown", () => {
 
 test("daily totals count how many foods had each value", () => {
   const { totals, known, foods } = totalsFor([
-    entry({ nutrients: { calories: 100, sodium: 50 } }),
+    entry({ nutrients: { calories: 100, potassium: 50 } }),
     entry({ nutrients: { calories: 200 } }),
   ]);
   assert.equal(totals.calories, 300);
-  assert.equal(totals.sodium, 50);
-  assert.equal(known.sodium, 1);
+  assert.equal(totals.potassium, 50);
+  assert.equal(known.potassium, 1);
   assert.equal(totals.fiber, undefined);
   assert.equal(foods, 2);
 });
@@ -40,8 +40,8 @@ test("statuses say where a value stands, and going over a minimum is fine", () =
   assert.deepEqual(statusFor("protein", range, 100), { kind: "in-range", text: "In range" });
   assert.deepEqual(statusFor("protein", range, 130), { kind: "over", text: "Over by 10 g" });
   assert.deepEqual(statusFor("fiber", { kind: "min", min: 33 }, 50), { kind: "in-range", text: "In range" });
-  assert.deepEqual(statusFor("sodium", { kind: "max", max: 2300 }, 2600), { kind: "over", text: "Over by 300 mg" });
-  assert.deepEqual(statusFor("sodium", { kind: "max", max: 2300 }, 1800), { kind: "in-range", text: "Under limit" });
+  assert.deepEqual(statusFor("fat", { kind: "max", max: 80 }, 90), { kind: "over", text: "Over by 10 g" });
+  assert.deepEqual(statusFor("fat", { kind: "max", max: 80 }, 60), { kind: "in-range", text: "Under limit" });
   assert.equal(statusFor("iron", { kind: "min", min: 8 }, undefined).kind, "unknown");
   assert.deepEqual(statusFor("iron", { kind: "min", min: 8, upper: 45 }, 50), { kind: "over", text: "Above safe upper limit" });
 });
@@ -77,9 +77,9 @@ test("custom food errors say what to do", () => {
   const values = emptyCustomFood("2026-10-19");
   values.name = "Soup";
   values.amounts.calories = "about 200";
-  values.amounts.sodium = "-5";
+  values.amounts.potassium = "-5";
   const { errors } = validateCustomFood(values, TODAY);
   assert.equal(errors.date, "Choose today or an earlier day.");
   assert.equal(errors.calories, "Enter calories as a number of kcal, like 120.");
-  assert.equal(errors.sodium, "Enter 0 or more mg.");
+  assert.equal(errors.potassium, "Enter 0 or more mg.");
 });

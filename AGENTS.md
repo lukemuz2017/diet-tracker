@@ -61,7 +61,7 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
 - **All targets** follow `research/nutrition-targets.md` (sources cited there); don't change a rule without updating that file. Calories use the National Academies 2023 energy equations by sex and activity level (±10%); protein is per kg of body weight; calcium, iron and vitamin C have upper limits.
 - **Rolling 7-day window:** every nutrient is judged on its average over today and the 6 days before; daily ranges are only a guide. The full rules (only days the person marks complete count, first-week stages, the 14-day weekend trend) are in `flows.md` under "How the 7-day window works". Keep this logic in pure functions in `lib/`.
 - **Unknown values:** only food name, date, calories, protein, carbs and fat are required. A blank optional nutrient is unknown, not zero, and summaries say how many foods they're based on.
-- **Common foods:** a static, bundled list (about 40 foods) with all 11 nutrients per standard serving. Values come from USDA FoodData Central, cited in the data file.
+- **Common foods:** a static, bundled list (about 40 foods) with all 10 nutrients per standard serving. Values come from USDA FoodData Central, cited in the data file.
 
 ## Code conventions
 
@@ -135,4 +135,5 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
 - 2026-10-20 (student): saving a recipe no longer offers to log it. A recipe is saved for later and appears under Meals & recipes in Add food, where you pick the number of servings eaten.
 - 2026-10-20 (student): Add food stages foods: picking one puts it on a "To add" list (amount and Remove on each, with a kcal total), and a single "Add N foods to [meal]" button adds them all, with one Undo. Nothing is logged until that button.
 - 2026-10-20 (student): the paste-a-recipe option is removed (reading recipe text would need an API or fragile parsing); recipes are only built from ingredients. `parseRecipeText` and its tests are gone.
+- 2026-10-20 (student): sodium is no longer tracked, so 10 nutrients now (calories, protein, carbs, fat, fiber, potassium, calcium, iron, vitamin A, vitamin C). The "Keep under" group, the salt habit tile and the "salty" heads-up are gone, and the sodium column was removed from `lib/foods-data.ts`. Saved entries that still carry a sodium value are ignored.
 - Next: the weekend vs. weekday trend, a mobile layout pass, then deploy to Vercel and run the first-run check.

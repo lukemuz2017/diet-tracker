@@ -92,9 +92,9 @@ function fill(tip: TipText | string, diet: Pick<Diet, "allergies" | "pattern">):
 }
 
 /** Which on-track nutrient to praise first: the harder wins lead. */
-const GOOD_ORDER: NutrientKey[] = ["fiber", "vitaminC", "potassium", "calcium", "iron", "vitaminA", "protein", "carbs", "fat", "calories", "sodium"];
+const GOOD_ORDER: NutrientKey[] = ["fiber", "vitaminC", "potassium", "calcium", "iron", "vitaminA", "protein", "carbs", "fat", "calories"];
 /** Staying under a limit or near maintenance is good, but no single food earns the credit. */
-const NO_SOURCE: NutrientKey[] = ["calories", "sodium"];
+const NO_SOURCE: NutrientKey[] = ["calories"];
 
 export type TileKind = "good" | "improve" | "big";
 
@@ -153,11 +153,6 @@ const HABITS: { title: string; tip: TipText | string; keys: (low: Set<NutrientKe
       fallback: "Your days run light. Try a fuller lunch, or plan an afternoon snack.",
     },
     keys: (low) => (low.has("calories") && ["carbs", "protein", "fat"].some((key) => low.has(key as NutrientKey)) ? (["calories", "carbs", "protein", "fat"] as NutrientKey[]).filter((key) => low.has(key)) : []),
-  },
-  {
-    title: "Ease up on salt",
-    tip: "Salt adds up fast in packaged and restaurant food. Try cooking one more meal at home this week.",
-    keys: (_, high) => (high.has("sodium") ? ["sodium"] : []),
   },
   {
     title: "Portion check",
@@ -229,7 +224,7 @@ export function summarize(summary: WindowSummary, targets: Targets, entries: Ent
     const { days, inRange: good } = summary.coverage[key];
     return days === 0 ? 0 : good / days;
   };
-  // Calories and sodium are only praised when nothing else is on track.
+  // Calories are only praised when nothing else is on track.
   const rank = (key: NutrientKey) => (NO_SOURCE.includes(key) ? 1 : 0);
   const good = [...inRange].sort((a, b) => rank(a) - rank(b) || share(b) - share(a) || GOOD_ORDER.indexOf(a) - GOOD_ORDER.indexOf(b))[0];
   if (good) {

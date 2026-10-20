@@ -1,6 +1,6 @@
 # Health Tracker (working name)
 
-A diet tracker for keeping a **balanced diet** and maintaining your weight, not losing it. Enter a few details about yourself once, and it sets target ranges for calories, macros, fiber, sodium and key vitamins and minerals. Log what you eat, and see where you stand today and over your last 7 days, with suggestions for what to eat more or less of.
+A diet tracker for keeping a **balanced diet** and maintaining your weight, not losing it. Enter a few details about yourself once, and it sets target ranges for calories, macros, fiber and key vitamins and minerals. Log what you eat, and see where you stand today and over your last 7 days, with suggestions for what to eat more or less of.
 
 Built for MPCS 51238 *Design, Build, Ship*, Assignment 3: Patterns & Flows.
 

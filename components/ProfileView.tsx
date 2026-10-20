@@ -79,7 +79,7 @@ export function ProfileView() {
   );
 }
 
-/** Top edges for the range groups: macros, get enough of, keep under. */
+/** Top edges for the range groups: macros, get enough of. */
 const GROUP_ACCENTS = ["border-leaf", "border-lemon", "border-carrot"];
 /** Stat tiles get a colored top edge each, like price cards. */
 const STAT_ACCENTS: Record<string, string> = { Height: "border-leaf", Weight: "border-lemon", Age: "border-carrot" };

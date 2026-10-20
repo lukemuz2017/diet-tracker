@@ -1,4 +1,4 @@
-// The eleven tracked nutrients (flows.md: What's tracked).
+// The ten tracked nutrients (flows.md: What's tracked).
 
 export type NutrientKey =
   | "calories"
@@ -6,7 +6,6 @@ export type NutrientKey =
   | "carbs"
   | "fat"
   | "fiber"
-  | "sodium"
   | "potassium"
   | "calcium"
   | "iron"
@@ -24,7 +23,6 @@ export const NUTRIENTS: Record<NutrientKey, { label: string; unit: NutrientUnit 
   carbs: { label: "Carbs", unit: "g" },
   fat: { label: "Fat", unit: "g" },
   fiber: { label: "Fiber", unit: "g" },
-  sodium: { label: "Sodium", unit: "mg" },
   potassium: { label: "Potassium", unit: "mg" },
   calcium: { label: "Calcium", unit: "mg" },
   iron: { label: "Iron", unit: "mg" },
@@ -36,5 +34,4 @@ export const NUTRIENTS: Record<NutrientKey, { label: string; unit: NutrientUnit 
 export const NUTRIENT_GROUPS: { title: string; keys: NutrientKey[] }[] = [
   { title: "Energy and macros", keys: ["calories", "protein", "carbs", "fat"] },
   { title: "Get enough of", keys: ["fiber", "potassium", "calcium", "iron", "vitaminA", "vitaminC"] },
-  { title: "Keep under", keys: ["sodium"] },
 ];

@@ -11,7 +11,6 @@ const targets = {
   carbs: { kind: "range", min: 130, max: 300 },
   fat: { kind: "range", min: 40, max: 80 },
   fiber: { kind: "min", min: 28 },
-  sodium: { kind: "max", max: 2300 },
   potassium: { kind: "min", min: 3400 },
   calcium: { kind: "min", min: 1000 },
   iron: { kind: "min", min: 8 },

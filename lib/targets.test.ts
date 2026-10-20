@@ -60,10 +60,9 @@ test("fat is 20–35% of calories, 25–35% at 18", () => {
   assert.equal(teen.fat.min, Math.round((2090 * 0.25) / 9));
 });
 
-test("fiber scales with calories and sodium stays fixed", () => {
+test("fiber scales with calories", () => {
   const t = computeTargets(man, TODAY);
   assert.deepEqual(t.fiber, { kind: "min", min: 41 }); // 2.93 × 14
-  assert.deepEqual(t.sodium, { kind: "max", max: 2300 });
 });
 
 test("vitamins and minerals use the DRI for sex and age, with upper limits", () => {
@@ -100,7 +99,6 @@ test("targets read naturally", () => {
   const t = computeTargets(man, TODAY);
   assert.equal(formatTarget("calories", t.calories), "2,640–3,220 kcal");
   assert.equal(formatTarget("fiber", t.fiber), "at least 41 g");
-  assert.equal(formatTarget("sodium", t.sodium), "under 2,300 mg");
 });
 
 test("pregnancy uses the 2023 pregnancy equation from the second trimester", () => {

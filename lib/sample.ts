@@ -41,7 +41,7 @@ const SNACKS: Meal[] = [
   [["greekYogurt", 1], ["blueberries", 1]],
   [["hummus", 2], ["carrots", 2]],
 ];
-// Weekends lean on pizza and soda, so sodium runs high and fiber low.
+// Weekends lean on pizza and soda, so fiber runs low.
 const WEEKEND_DINNER: Meal = [["cheesePizza", 3], ["cola", 1], ["saladGreens", 1]];
 // A busy day where only breakfast got logged, so it's left unmarked.
 const LIGHT_DAY_INDEX = 11;

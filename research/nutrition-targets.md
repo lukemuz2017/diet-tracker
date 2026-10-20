@@ -11,7 +11,6 @@ All targets are judged on the rolling 7-day average. W = body weight in kg; kcal
 | Carbs | 45–65% of calories (AMDR), and at least 130 g (RDA). | [S9], [S10] |
 | Fat | 20–35% of calories (AMDR); 25–35% at 18. | [S1], [S10] |
 | Fiber | At least 14 g per 1,000 kcal (Adequate Intake). | [S9], [S15] |
-| Sodium | Under 2,300 mg (Chronic Disease Risk Reduction intake; kept by DGA 2025–2030). No minimum. | [S1], [S9] |
 | Potassium | AI: men 3,000 mg at 18, 3,400 mg at 19+; women 2,300 mg at 18, 2,600 mg at 19+. May not apply with kidney disease. | [S19] |
 | Calcium | RDA: 1,300 mg at 18; 1,000 mg at 19–50 and men 51–70; 1,200 mg for women 51+ and men 71+. UL 3,000 / 2,500 / 2,000 mg (18 / 19–50 / 51+). | [S20] |
 | Iron | RDA: men 11 mg at 18, 8 mg at 19+; women 15 mg at 18, 18 mg at 19–50, 8 mg at 51+. UL 45 mg. | [S21] |
@@ -42,7 +41,7 @@ The ⓘ text for calories says a doctor or midwife may suggest a different amoun
 
 **Considered but not used**
 - Mifflin-St Jeor × activity factors: Mifflin-St Jeor is still recommended for *resting* energy [S5], [S6], but the common 1.2–1.725 multipliers couldn't be traced to an authority.
-- AHA's 1,500 mg sodium ideal, and WHO's 2,000 mg [S17], [S18].
+- Sodium as a tracked nutrient (under 2,300 mg, the National Academies and DGA limit [S1], [S9]): dropped at the student's request on 2026-10-20. The AHA's 1,500 mg ideal and WHO's 2,000 mg [S17], [S18] were already set aside.
 - Smokers' +35 mg vitamin C (would need another setup question) and vegetarians' 1.8× iron (the eating pattern is now asked, but this isn't applied yet).
 - Added sugar is not tracked, by the student's choice.
 

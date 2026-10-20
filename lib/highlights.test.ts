@@ -9,7 +9,6 @@ const targets = {
   carbs: { kind: "range", min: 130, max: 300 },
   fat: { kind: "range", min: 40, max: 80 },
   fiber: { kind: "min", min: 28 },
-  sodium: { kind: "max", max: 2300 },
   potassium: { kind: "min", min: 3400 },
   calcium: { kind: "min", min: 1000, upper: 2500 },
   iron: { kind: "min", min: 8 },
@@ -18,15 +17,15 @@ const targets = {
 } as Targets;
 
 test("up to three wins, the harder ones first", () => {
-  const { wins, headsUp } = dayHighlights({ calories: 2000, protein: 80, fiber: 30, vitaminC: 120, potassium: 3500, calcium: 1100, sodium: 1500 }, targets);
+  const { wins, headsUp } = dayHighlights({ calories: 2000, protein: 80, fiber: 30, vitaminC: 120, potassium: 3500, calcium: 1100 }, targets);
   assert.deepEqual(wins, ["High in fiber", "Vitamin C", "Potassium"]);
   assert.equal(headsUp, undefined);
 });
 
-test("a salty day gets one heads-up", () => {
-  const { wins, headsUp } = dayHighlights({ calories: 2600, protein: 80, sodium: 3200 }, targets);
+test("a day over on calories gets one heads-up", () => {
+  const { wins, headsUp } = dayHighlights({ calories: 2600, protein: 80 }, targets);
   assert.deepEqual(wins, ["Protein"]);
-  assert.equal(headsUp, "Heads up: salty");
+  assert.equal(headsUp, "Heads up: calories high");
 });
 
 test("going over a minimum is a win, not a heads-up", () => {

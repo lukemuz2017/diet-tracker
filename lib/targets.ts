@@ -231,7 +231,6 @@ export function computeTargets(profile: Profile, today: string): Targets {
     carbs: { kind: "range", min: Math.max(Math.round((kcal * 0.45) / 4), 130), max: Math.round((kcal * 0.65) / 4) },
     fat: { kind: "range", min: Math.round((kcal * (teen ? 0.25 : 0.2)) / 9), max: Math.round((kcal * 0.35) / 9) },
     fiber: { kind: "min", min: Math.round((kcal / 1000) * 14) },
-    sodium: { kind: "max", max: 2300 },
     potassium: micronutrient("potassium", profile, age),
     calcium: micronutrient("calcium", profile, age),
     iron: micronutrient("iron", profile, age),
@@ -306,8 +305,6 @@ export function explainTarget(key: NutrientKey, profile: Profile, targets: Targe
       return `${age <= 18 ? "25" : "20"}–35% of your ${kcalText}, at 9 kcal per gram.`;
     case "fiber":
       return `14 g for every 1,000 kcal you eat (the National Academies’ Adequate Intake), so ${target.min} g at ${kcalText}.`;
-    case "sodium":
-      return "Under 2,300 mg a day, the limit set by the National Academies and the 2025–2030 Dietary Guidelines. There’s no minimum to hit.";
     default: {
       const basis = key === "potassium" ? "Adequate Intake" : "Recommended Dietary Allowance";
       const nonbinary =
