@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import type { Profile } from "@/lib/profile";
+import { dietOf, type Profile } from "@/lib/profile";
 import type { SavedData } from "@/lib/storage";
 import { summarize } from "@/lib/suggestions";
 import { computeTargets } from "@/lib/targets";
@@ -19,7 +19,7 @@ export function WeekSummary({ data, profile, today, end, range }: { data: SavedD
   const verdictId = useId();
   const targets = computeTargets(profile, today);
   const window = summarizeWindow(data, end, targets);
-  const { verdict, headline, tiles } = summarize(window, targets, data.entries);
+  const { verdict, headline, tiles } = summarize(window, targets, data.entries, dietOf(profile));
 
   return (
     <section aria-describedby={verdictId} className="mb-4 mt-1 grid items-center gap-x-6 gap-y-3 rounded-card bg-paper p-4 sm:mt-3 sm:p-5 lg:grid-cols-[14rem_minmax(0,1fr)]">

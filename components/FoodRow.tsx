@@ -51,9 +51,12 @@ export function FoodRow({
   perBase,
   defaultMultiple = 1,
   actionLabel = "Add",
+  warnings = [],
   onAdd,
 }: {
   name: string;
+  /** Clashes with the profile's diet notes, e.g. "Contains dairy". */
+  warnings?: string[];
   spec: AmountSpec;
   /** Values for the base amount. */
   perBase: Nutrients;
@@ -75,6 +78,15 @@ export function FoodRow({
           {calories !== undefined && <span className="font-normal text-muted"> · {formatValue(calories)} kcal</span>}
         </span>
         {spec.note && <span className="text-[13px] text-muted">{spec.note}</span>}
+        {warnings.length > 0 && (
+          <span className="flex flex-wrap gap-1.5">
+            {warnings.map((warning) => (
+              <span key={warning} className="rounded-full bg-carrot/25 px-2 py-0.5 text-xs font-bold">
+                {warning}
+              </span>
+            ))}
+          </span>
+        )}
         {tags.length > 0 && (
           <span className="flex flex-wrap gap-1.5">
             <span className="sr-only">Good source of {tags.join(", ")}</span>

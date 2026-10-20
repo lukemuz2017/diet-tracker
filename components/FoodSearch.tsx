@@ -7,6 +7,8 @@ export interface SearchOption {
   name: string;
   /** e.g. "½ cup · 114 kcal" */
   detail: string;
+  /** e.g. "Contains dairy", from the profile's diet notes. */
+  warning?: string;
 }
 
 const MAX_SUGGESTIONS = 8;
@@ -132,7 +134,10 @@ export function FoodSearch({
               index === active ? "bg-leaf-tint" : ""
             }`}
           >
-            <span className="font-bold">{option.name}</span>
+            <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="font-bold">{option.name}</span>
+              {option.warning && <span className="rounded-full bg-carrot/25 px-2 text-xs font-bold">{option.warning}</span>}
+            </span>
             <span className="text-right text-[13px] text-muted">{option.detail}</span>
           </li>
         ))}

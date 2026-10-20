@@ -4,8 +4,16 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/Card";
-import { ChoiceField, FieldError, TextField } from "@/components/ui/Field";
-import { ACTIVITY_OPTIONS, SEX_OPTIONS, type Profile } from "@/lib/profile";
+import { CheckboxPills, ChoiceField, FieldError, TextField } from "@/components/ui/Field";
+import {
+  ACTIVITY_OPTIONS,
+  ALLERGEN_OPTIONS,
+  LIFE_STAGE_OPTIONS,
+  PATTERN_OPTIONS,
+  SEX_OPTIONS,
+  asksLifeStage,
+  type Profile,
+} from "@/lib/profile";
 import { EMPTY_SETUP, switchUnits, validateSetup, valuesFromProfile, type SetupField, type SetupValues } from "@/lib/setup";
 import { updateData, useSavedData } from "@/lib/storage";
 import { useToday } from "@/lib/useToday";
@@ -20,7 +28,7 @@ export function SetupScreen() {
       <PageHeader
         eyebrow={editing ? undefined : "Step 1 of 2"}
         title={editing ? "Edit your details" : "Your details"}
-        description="Six quick questions. We use them only to estimate your daily ranges, and they stay on this device."
+        description="Six quick questions, plus optional diet notes. We use them only to estimate your daily ranges and tailor suggestions, and they stay on this device."
       />
       {/* The form waits for saved data so editing starts prefilled. */}
       {data && today && <SetupForm key={editing ? "edit" : "new"} saved={data.profile} today={today} />}
@@ -200,6 +208,38 @@ export function SetupForm({ saved, today }: { saved: Profile | null; today: stri
         onChange={(activity) => set({ activity })}
         error={shown.activity}
       />
+
+      <fieldset className="flex flex-col gap-5 rounded-card border-[1.5px] border-line bg-paper p-4">
+        <legend className="px-1 font-display text-lg font-extrabold">
+          Diet notes <span className="text-sm font-normal text-muted">(optional)</span>
+        </legend>
+        <ChoiceField
+          name="pattern"
+          legend="How do you eat?"
+          hint="Suggestions only name foods that fit."
+          options={PATTERN_OPTIONS}
+          value={values.pattern}
+          onChange={(pattern) => set({ pattern })}
+        />
+        <CheckboxPills
+          name="allergies"
+          legend="Allergies or intolerances"
+          hint="Foods that contain these are flagged when you search, and suggestions leave them out."
+          options={ALLERGEN_OPTIONS}
+          values={values.allergies}
+          onChange={(allergies) => set({ allergies })}
+        />
+        {asksLifeStage(values.sex) && (
+          <ChoiceField
+            name="lifeStage"
+            legend="Pregnant or breastfeeding?"
+            hint="Uses the official calorie, protein, iron and vitamin values for pregnancy or breastfeeding."
+            options={LIFE_STAGE_OPTIONS.map(({ value, label }) => ({ value, label }))}
+            value={values.lifeStage}
+            onChange={(lifeStage) => set({ lifeStage })}
+          />
+        )}
+      </fieldset>
 
       <Button type="submit" className="min-h-12 self-start px-7 text-[17px]">
         {saved ? "Save and update my ranges" : "See my ranges"}

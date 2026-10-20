@@ -79,6 +79,51 @@ export function TextField({
 const choiceBase =
   "cursor-pointer border-[1.5px] border-field bg-white has-checked:border-leaf has-checked:bg-leaf has-checked:text-white has-focus-visible:outline-[3px] has-focus-visible:outline-offset-2 has-focus-visible:outline-soil has-focus-visible:outline-solid";
 
+/** Several choices at once, as pills (same look as ChoiceField). */
+export function CheckboxPills<T extends string>({
+  name,
+  legend,
+  hint,
+  options,
+  values,
+  onChange,
+}: {
+  name: string;
+  legend: string;
+  hint?: ReactNode;
+  options: readonly { value: T; label: string }[];
+  values: T[];
+  onChange: (values: T[]) => void;
+}) {
+  const hintId = hint ? `${name}-hint` : undefined;
+  return (
+    <fieldset className="flex flex-col gap-1.5" aria-describedby={hintId}>
+      <legend className="pb-1.5 text-[15px] font-bold">{legend}</legend>
+      {hint && (
+        <p id={hintId} className="-mt-1.5 text-[13px] text-muted">
+          {hint}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <label key={option.value} className={`${choiceBase} inline-flex min-h-11 items-center rounded-full px-4 text-[15px] font-bold`}>
+            <input
+              type="checkbox"
+              id={`${name}-${option.value}`}
+              checked={values.includes(option.value)}
+              onChange={(event) =>
+                onChange(event.target.checked ? [...values, option.value] : values.filter((value) => value !== option.value))
+              }
+              className="sr-only"
+            />
+            {option.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 /**
  * Radio choices as pills, or as stacked cards when options have descriptions.
  * Each radio's id is `${name}-${value}`, so a form can focus the first one.

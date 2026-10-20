@@ -12,6 +12,8 @@ import { CATEGORY_ORDER, FOODS, amountFor, categoryOf } from "@/lib/foods";
 import { formatValue, recentFoods } from "@/lib/log";
 import { MEALS, type Meal } from "@/lib/meals";
 import type { Nutrients } from "@/lib/nutrients";
+import { warningsFor } from "@/lib/diet";
+import { dietOf, type Diet } from "@/lib/profile";
 import type { SavedData } from "@/lib/storage";
 
 interface Choice {
@@ -24,13 +26,15 @@ interface Choice {
 
 type Mode = "foods" | "meals";
 
-function toOption(choice: Choice): SearchOption {
+function toOption(choice: Choice, diet: Diet): SearchOption {
   const spec = amountFor(choice.foodId);
   const kcal = choice.perServing.calories;
+  const warning = warningsFor(choice.foodId, diet).join(" · ");
   return {
     key: choice.key,
     name: choice.name,
     detail: `${formatAmount(spec, spec.base)}${kcal !== undefined ? ` · ${formatValue(kcal)} kcal` : ""}`,
+    warning: warning || undefined,
   };
 }
 
@@ -44,6 +48,7 @@ export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; dat
   const [ownName, setOwnName] = useState("");
   const isToday = date === today;
   const dayLabel = isToday ? "today" : formatDay(date);
+  const diet = dietOf(data.profile!);
 
   function add(food: { name: string; foodId?: string; perServing: Nutrients }, multiple: number) {
     const spec = amountFor(food.foodId);
@@ -84,7 +89,7 @@ export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; dat
   ];
 
   const choices = mode === "foods" ? foodChoices : mealChoices;
-  const options = choices.map(toOption);
+  const options = choices.map((choice) => toOption(choice, diet));
   const emptyOptions =
     mode === "foods"
       ? recentFoodKeys.map((key) => options.find((option) => option.key === key)).filter((option): option is SearchOption => Boolean(option))
@@ -146,6 +151,7 @@ export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; dat
                 spec={amountFor(pickedChoice.foodId)}
                 perBase={pickedChoice.perServing}
                 defaultMultiple={pickedChoice.multiple}
+                warnings={warningsFor(pickedChoice.foodId, diet)}
                 onAdd={(multiple) => add(pickedChoice, multiple)}
               />
             </ul>
@@ -189,6 +195,7 @@ export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; dat
                       spec={amountFor(food.id)}
                       perBase={food.nutrients}
                       defaultMultiple={lastMultiple(food.id)}
+                      warnings={warningsFor(food.id, diet)}
                       onAdd={(multiple) => add({ name: food.name, foodId: food.id, perServing: food.nutrients }, multiple)}
                     />
                   ))}
