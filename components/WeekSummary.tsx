@@ -32,7 +32,6 @@ export function WeekSummary({ data, profile, today, end, range }: { data: SavedD
             Based on {window.counted} {window.counted === 1 ? "day" : "days"} so far
           </p>
         )}
-        {end !== today && <p className="text-xs text-muted">Today joins once you mark it complete.</p>}
         <p id={verdictId} className="mt-2.5 font-display text-lg font-extrabold leading-tight text-leaf">
           {headline}
         </p>
