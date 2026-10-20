@@ -31,7 +31,6 @@ export function ProfileView() {
       <PageHeader
         eyebrow={firstVisit ? "Step 2 of 2" : undefined}
         title="Your profile"
-        description="Your details, and what a balanced day looks like for you at your current weight."
       />
       <div className="flex max-w-2xl flex-col gap-5">
         <MemberCard profile={profile} today={today} />
@@ -64,7 +63,7 @@ export function ProfileView() {
         ))}
 
         <p className="max-w-[60ch] text-sm text-muted">
-          Each nutrient is judged on its average over your last 7 days, so a day out of range is
+          Each nutrient is judged on its average over the days you complete in the last week, so a day out of range is
           normal. These are estimates for maintaining your weight, not medical advice.
         </p>
 

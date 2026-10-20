@@ -46,7 +46,7 @@ function useSize<T extends HTMLElement>() {
 }
 
 /**
- * The running 7-day average drawn over the bars: a 2px line with a paper halo
+ * The running average drawn over the bars: a 2px line with a paper halo
  * (it crosses the bars) and a marker per day, labeled at the end.
  */
 function RunningLine({ running, top, width, height, unit }: { running: (number | undefined)[]; top: number; width: number; height: number; unit: string }) {
@@ -144,7 +144,7 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
             const value = day.totals[key];
             const status = statusFor(key, target, value).kind;
             const average = running[index];
-            const tip = `${formatDay(day.date)}: ${describe(day)}${STATE_WORDS[day.state]}${average === undefined ? "" : ` · 7-day average so far ${formatValue(average)} ${unit}`}`;
+            const tip = `${formatDay(day.date)}: ${describe(day)}${STATE_WORDS[day.state]}${average === undefined ? "" : ` · average so far ${formatValue(average)} ${unit}`}`;
             return (
               <li key={day.date} className="relative flex h-full flex-col justify-end" onMouseEnter={() => setActive(day.date)} onMouseLeave={() => setActive(null)}>
                 {active === day.date && (
@@ -177,7 +177,7 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
             <path d="M1 5h20" stroke="var(--color-soil)" strokeWidth="2" />
             <circle cx="11" cy="5" r="3.5" fill="var(--color-soil)" />
           </svg>
-          Line: your 7-day average as the days add up
+          Line: your average as the days add up
         </span>
         <span>Faded bars: not marked complete, so they don’t count.</span>
       </p>
@@ -229,7 +229,7 @@ const MACROS = [
   { key: "fat", label: "Fat", kcalPerGram: 9, color: "#B04E2C", range: [20, 35] },
 ] as const;
 
-/** Share of calories from protein, carbs and fat (7-day averages), against their ranges. */
+/** Share of calories from protein, carbs and fat (averages), against their ranges. */
 export function MacroSplit({ averages, teen }: { averages: Nutrients; teen: boolean }) {
   const kcal = MACROS.map((macro) => (averages[macro.key] ?? 0) * macro.kcalPerGram);
   const total = kcal.reduce((sum, value) => sum + value, 0);

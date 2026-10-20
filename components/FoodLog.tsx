@@ -31,7 +31,7 @@ const TABS: { value: Tab; label: string }[] = [
 ];
 
 // This week, one page with two views (like a profile's segmented tabs):
-// Progress shows week ribbons (each nutrient, each day, and the 7-day average
+// Progress shows week ribbons (each nutrient, each day, and the average
 // that counts); Foods lists what was eaten each day. "+ Add food" opens a
 // pop-up form; clicking a day opens that day in a side panel.
 export function FoodLog() {

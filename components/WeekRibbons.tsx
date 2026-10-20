@@ -26,7 +26,7 @@ const SUMMARY: Record<string, string> = { "to-go": "Under", "in-range": "In rang
 
 /**
  * Week ribbons: one row per nutrient, a cell per day (in range / under / over
- * / not logged) and the 7-day average that counts. Clicking a day opens that
+ * / not logged) and the average that counts. Clicking a day opens that
  * day; clicking a nutrient expands its weekly detail.
  */
 export function WeekRibbons({
@@ -74,7 +74,7 @@ export function WeekRibbons({
                 <span className={day.date === today ? "font-bold text-soil" : ""}>{dayLabel(day.date)}</span>
               </button>
             ))}
-            <span className="pl-3 text-xs font-bold text-leaf">7-day average</span>
+            <span className="pl-3 text-xs font-bold text-leaf">Average</span>
           </div>
 
           {NUTRIENT_GROUPS.flatMap((group) => group.keys).map((key) => {
@@ -120,7 +120,7 @@ export function WeekRibbons({
                         type="button"
                         aria-expanded={open}
                         onClick={() => setExpanded(open ? null : key)}
-                        aria-label={`${label} 7-day average: ${status.text}. ${open ? "Hide" : "Show"} details`}
+                        aria-label={`${label} average: ${status.text}. ${open ? "Hide" : "Show"} details`}
                         className="whitespace-nowrap rounded-full"
                       >
                         <StatusChip status={status.kind}>{SUMMARY[status.kind]}</StatusChip>
@@ -183,13 +183,12 @@ function NutrientDetail({
     <div className="mb-2 flex flex-col gap-4 rounded-xl bg-celery/60 p-4">
       <NutrientBar nutrient={nutrientKey} target={targets[nutrientKey]} value={summary.counted > 0 ? summary.averages[nutrientKey] : undefined} />
       <table className="w-full text-sm">
-        <caption className="sr-only">{label} each day, whether it counts toward the 7-day average, and the food that gave the most</caption>
+        <caption className="sr-only">{label} each day and the food that gave the most. Grayed days aren’t marked complete, so they’re left out of the average.</caption>
         <thead>
           <tr className="text-left text-xs font-bold uppercase tracking-[0.08em] text-leaf">
             <th scope="col" className="pb-1 font-bold">Each day</th>
             <th scope="col" className="pb-1 text-right font-bold">{label}</th>
-            <th scope="col" className="pb-1 pl-4 font-bold">In the average?</th>
-            <th scope="col" className="pb-1 pl-4 font-bold">Top source</th>
+            <th scope="col" className="pb-1 pl-6 font-bold">Top source</th>
           </tr>
         </thead>
         <tbody>
@@ -198,23 +197,16 @@ function NutrientDetail({
             const top = topByDay.get(day.date);
             const counts = day.state === "complete" && value !== undefined;
             return (
-              <tr key={day.date} className={counts ? "" : "text-muted"}>
-                <th scope="row" className="py-1 text-left font-normal">{dayName(day.date)}</th>
-                <td className={`py-1 text-right tabular-nums ${counts ? "font-bold" : ""}`}>
-                  {day.foods === 0 ? "–" : value === undefined ? "no value" : `${formatValue(value)} ${unit}`}
+              // Days that don't count are grayed out; the average leaves them out.
+              <tr key={day.date} className={counts ? "" : "text-faded"}>
+                <th scope="row" className="py-1 text-left font-normal">
+                  {dayName(day.date)}
+                  {!counts && <span className="sr-only"> (not counted)</span>}
+                </th>
+                <td className="py-1 text-right tabular-nums">
+                  {day.foods === 0 ? "not logged" : value === undefined ? "no value" : `${formatValue(value)} ${unit}`}
                 </td>
-                <td className="py-1 pl-4">
-                  {counts ? (
-                    <span className="rounded-full bg-leaf-tint px-2 py-0.5 text-xs font-bold text-soil">✓ Counted</span>
-                  ) : day.foods === 0 ? (
-                    <span className="rounded-full border-[1.5px] border-dashed border-field px-2 py-0.5 text-xs font-bold">Not logged</span>
-                  ) : day.state !== "complete" ? (
-                    <span className="rounded-full border-[1.5px] border-field px-2 py-0.5 text-xs font-bold">Not complete</span>
-                  ) : (
-                    <span className="text-xs">No value logged</span>
-                  )}
-                </td>
-                <td className="py-1 pl-4">
+                <td className="py-1 pl-6">
                   {top ? (
                     <>
                       {top.name}
@@ -230,14 +222,12 @@ function NutrientDetail({
         </tbody>
         <tfoot>
           <tr className="border-t border-line">
-            <th scope="row" className="pt-2 text-left font-bold">7-day average</th>
+            <th scope="row" className="pt-2 text-left font-bold">Average</th>
             <td className="pt-2 text-right font-bold tabular-nums">
               {summary.averages[nutrientKey] === undefined ? "–" : `${formatValue(summary.averages[nutrientKey]!)} ${unit}`}
             </td>
-            <td colSpan={2} className="pt-2 pl-4 text-[13px] text-muted">
-              {countedDays === 0
-                ? "No complete days with a value yet. Mark a day complete to start the average."
-                : `The average of the ${countedDays} counted ${countedDays === 1 ? "day" : "days"} above. Days not marked complete are left out.`}
+            <td className="pt-2 pl-6 text-[13px] text-muted">
+              {countedDays === 0 ? "Mark a day complete to start the average." : `of ${countedDays} ${countedDays === 1 ? "day" : "days"}`}
             </td>
           </tr>
         </tfoot>

@@ -11,6 +11,7 @@ The app's visual direction, chosen from four mood boards on Oct 18, 2026. The PD
 | `celery` | `#EEF2E4` | Page background |
 | `paper` | `#FBFCF7` | Cards and panels |
 | `soil` | `#1F2A1C` | Main text, value bars, dark message background |
+| `faded` | `#687063` | Grayed-out rows, e.g. days that don't count (4.7:1 on the detail panel) |
 | `carrot` | `#D9773A` | Over a range or limit (bars, cells, chips with soil text, 4.7:1) |
 | `muted` | `#4A5545` | Secondary text, hints |
 | `leaf` | `#2E6B3F` | Primary buttons, active nav, links, "in range" |
