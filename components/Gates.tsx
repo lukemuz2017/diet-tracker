@@ -17,7 +17,7 @@ export function RequireProfile() {
   return null;
 }
 
-/** On the welcome screen: sends someone who has set up to This week. */
+/** On the welcome screen: sends someone who has set up to Dashboard. */
 export function RedirectIfSetUp() {
   const data = useSavedData();
   const router = useRouter();

@@ -11,7 +11,7 @@ const KIND_LABEL = { good: "Going well", improve: "Could improve", big: "Bigger 
 /** Left edge: in range, under, over, or a general habit (kraft). */
 const TONE = { good: "border-leaf", low: "border-lemon", high: "border-carrot", big: "border-kraft" } as const;
 
-// The top of This week, and the page's heading: the title and dates, a
+// The top of Dashboard, and the page's heading: the title and dates, a
 // verdict on the last 7 days in words, and three tiles: going well, could
 // improve, and a bigger-picture habit (lib/suggestions.ts). One card, to keep the
 // page short.
@@ -24,7 +24,7 @@ export function WeekSummary({ data, profile, today, end, range }: { data: SavedD
   return (
     <section aria-describedby={verdictId} className="mb-4 mt-1 grid items-center gap-x-6 gap-y-3 rounded-card bg-paper p-4 sm:mt-3 sm:p-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
       <div>
-        <h1 className="font-display text-[34px] font-extrabold leading-none tracking-tight">This week</h1>
+        <h1 className="font-display text-[34px] font-extrabold leading-none tracking-tight">Dashboard</h1>
         <p className="mt-1 text-sm text-muted">{range}</p>
         {/* Until the week is full, say how many days the averages rest on. */}
         {window.counted > 0 && window.counted < WINDOW_DAYS && (

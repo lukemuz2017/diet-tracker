@@ -70,7 +70,7 @@ export function ProfileView() {
         </p>
 
         <ButtonLink href="/log" className="min-h-12 self-start px-7 text-[17px]">
-          {firstVisit ? "Log your first food" : "Back to This week"}
+          {firstVisit ? "Log your first food" : "Back to your dashboard"}
         </ButtonLink>
 
         <SampleData data={data} today={today} />

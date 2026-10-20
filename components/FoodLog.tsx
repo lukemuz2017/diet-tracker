@@ -30,7 +30,7 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "foods", label: "Foods" },
 ];
 
-// This week, one page with two views (like a profile's segmented tabs):
+// Dashboard, one page with two views (like a profile's segmented tabs):
 // Progress shows week ribbons (each nutrient, each day, and the average
 // that counts); Foods lists what was eaten each day. "+ Add food" opens a
 // pop-up form; clicking a day opens that day in a side panel.
@@ -44,7 +44,7 @@ export function FoodLog() {
   const [openDay, setOpenDay] = useState<string | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const baseId = useId();
-  if (!data?.profile || !today) return <PageHeader title="This week" />;
+  if (!data?.profile || !today) return <PageHeader title="Dashboard" />;
 
   // The 7 days that count: ending yesterday until today is marked complete.
   const end = currentWindowEnd(data.completeDays, today);
@@ -72,7 +72,7 @@ export function FoodLog() {
 
       {/* The view toggle and Add food share one row. */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="This week" className="flex min-w-0 max-w-md flex-1 gap-1 rounded-full border-[1.5px] border-field bg-white p-1">
+        <div role="tablist" aria-label="Dashboard views" className="flex min-w-0 max-w-md flex-1 gap-1 rounded-full border-[1.5px] border-field bg-white p-1">
           {TABS.map((item, index) => (
             <button
               key={item.value}

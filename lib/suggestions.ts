@@ -1,4 +1,4 @@
-// The summary at the top of This week: a verdict in words and three tiles,
+// The summary at the top of Dashboard: a verdict in words and three tiles,
 // judged on the 7-day averages: one thing going well, one that could improve,
 // and a bigger-picture habit drawn from the week as a whole. Suggestions stay
 // at the food-group level, not a specific food to add. Foods in the text are

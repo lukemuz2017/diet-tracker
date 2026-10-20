@@ -64,7 +64,7 @@ export function DayBadge({ state, share }: { state: DayState; share: number | nu
 /**
  * The 7 days ending on `end`: a score card ("X of 11 nutrients in range",
  * days logged, the day strip), then either each nutrient's bar against its
- * target ("bars", for This week) or high-level charts ("charts", for History).
+ * target ("bars", for Dashboard) or high-level charts ("charts", for History).
  */
 export function WindowView({
   data,
