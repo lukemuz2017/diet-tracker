@@ -71,7 +71,11 @@ export function WeekRibbons({
                 className="flex flex-col items-center gap-0.5 rounded-xl py-1 text-xs text-muted hover:bg-track"
               >
                 <DayBadge state={day.state} share={dayShare[index]} />
-                <span className={day.date === today ? "font-bold text-soil" : ""}>{dayLabel(day.date)}</span>
+                {/* Weekday and date on one line, so the header stays one row tall. */}
+                <span aria-hidden="true" className={`whitespace-nowrap ${day.date === today ? "font-bold text-soil" : ""}`}>
+                  {dayLabel(day.date)}
+                  {day.date !== today && <span className="font-bold text-soil"> {Number(day.date.slice(8))}</span>}
+                </span>
               </button>
             ))}
             <span className="pl-3 text-xs font-bold text-leaf">Average</span>
