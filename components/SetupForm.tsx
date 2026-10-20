@@ -1,10 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { WeekCalendar } from "@/components/WeekCalendar";
 import { PageHeader } from "@/components/ui/Card";
+import { InfoButton } from "@/components/ui/InfoButton";
+import { CalendarIcon } from "@/components/ui/icons";
 import { CheckboxPills, ChoiceField, FieldError, TextField } from "@/components/ui/Field";
 import {
   ACTIVITY_OPTIONS,
@@ -15,7 +17,7 @@ import {
   asksLifeStage,
   type Profile,
 } from "@/lib/profile";
-import { EMPTY_SETUP, switchUnits, validateSetup, valuesFromProfile, type SetupField, type SetupValues } from "@/lib/setup";
+import { EMPTY_SETUP, birthInputFrom, formatBirthInput, switchUnits, validateSetup, valuesFromProfile, type SetupField, type SetupValues } from "@/lib/setup";
 import { updateData, useSavedData } from "@/lib/storage";
 import { useToday } from "@/lib/useToday";
 
@@ -42,27 +44,25 @@ export function SetupScreen() {
   );
 }
 
-const WHY = "Used only to estimate your needs. Stays on this device.";
 
 /** Where focus goes when a field has an error, in form order. */
 function firstErrorTarget(field: SetupField, values: SetupValues) {
   if (field === "height") return values.units === "us" ? "setup-height-ft" : "setup-height-cm";
-  if (field === "birthDate") return "setup-birth-button";
+  if (field === "birthDate") return "setup-birth";
   if (field === "sex") return `sex-${values.sex ?? "female"}`;
   if (field === "activity") return `activity-${values.activity ?? "sedentary"}`;
   return `setup-${field}`;
 }
 
-/** The picked date as "YYYY-MM-DD", or null while the three parts aren't a number each. */
-function pickedBirthDate(values: SetupValues): string | null {
-  const { birthYear: y, birthMonth: m, birthDay: d } = values;
-  if (!/^\d{4}$/.test(y) || !/^\d{1,2}$/.test(m) || !/^\d{1,2}$/.test(d)) return null;
-  return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+/** The typed date as "YYYY-MM-DD" when it reads as one, else null. */
+function typedBirthDate(text: string): string | null {
+  const parts = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text.trim());
+  return parts ? `${parts[3]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}` : null;
 }
 
 /**
- * Date of birth: a button showing the date that drops down a calendar, with
- * month and year menus so there's no clicking back through decades.
+ * Date of birth: type it as month/day/year (the slashes fill in), or open the
+ * calendar from the button in the box, with month and year menus.
  */
 function BirthDateField({
   values,
@@ -77,16 +77,14 @@ function BirthDateField({
 }) {
   const [open, setOpen] = useState(false);
   const calendarId = useId();
-  const picked = pickedBirthDate(values);
+  const input = useRef<HTMLInputElement>(null);
+  const picked = typedBirthDate(values.birthDate);
   const thisYear = Number(today.slice(0, 4));
-  // With nothing picked yet, the calendar opens on a typical adult's birth year.
-  const start = picked ?? `${thisYear - 30}-${today.slice(5, 7)}-01`;
-  const label = picked
-    ? new Date(`${picked}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-    : "Select your date of birth";
+  // With nothing typed yet, the calendar opens on a typical adult's birth year.
+  const start = picked && picked <= today ? picked : `${thisYear - 30}-${today.slice(5, 7)}-01`;
 
   return (
-    <fieldset
+    <div
       className="flex flex-col gap-1.5"
       onKeyDown={(event) => {
         if (event.key === "Escape" && open) {
@@ -95,23 +93,39 @@ function BirthDateField({
         }
       }}
     >
-      <legend className="pb-1.5 text-[15px] font-bold">Date of birth</legend>
-      <button
-        id="setup-birth-button"
-        type="button"
-        aria-expanded={open}
-        aria-controls={calendarId}
-        aria-describedby={error ? "setup-birth-error" : undefined}
-        onClick={() => setOpen((value) => !value)}
-        className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-field bg-white px-3.5 text-left text-base ${
-          error ? "border-2 border-tomato" : "border-[1.5px] border-field"
-        }`}
+      <span className="flex items-center gap-1.5">
+        <label htmlFor="setup-birth" className="text-[15px] font-bold">
+          Date of birth
+        </label>
+        <InfoButton label="About date of birth">Used only to work out your age. Stays on this device.</InfoButton>
+      </span>
+      <div
+        className={`field-box flex h-12 items-center rounded-field bg-white pl-3.5 ${error ? "border-2 border-tomato" : "border-[1.5px] border-field"}`}
       >
-        <span className={picked ? "" : "text-muted"}>{label}</span>
-        <span aria-hidden="true" className={`text-muted transition-transform ${open ? "rotate-180" : ""}`}>
-          ▾
-        </span>
-      </button>
+        <input
+          ref={input}
+          id="setup-birth"
+          type="text"
+          inputMode="numeric"
+          autoComplete="bday"
+          placeholder="e.g. 02/19/1995"
+          value={values.birthDate}
+          onChange={(event) => set({ birthDate: formatBirthInput(event.target.value) })}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "setup-birth-error" : undefined}
+          className="min-w-0 flex-1 bg-transparent text-base text-soil placeholder:text-muted"
+        />
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={calendarId}
+          aria-label={open ? "Close calendar" : "Pick from a calendar"}
+          onClick={() => setOpen((value) => !value)}
+          className="grid size-11 flex-none place-items-center rounded-full text-leaf hover:bg-track"
+        >
+          <CalendarIcon width={22} height={22} />
+        </button>
+      </div>
       {open && (
         <div id={calendarId} className="w-full rounded-card border-[1.5px] border-line shadow-sm">
           <WeekCalendar
@@ -122,15 +136,15 @@ function BirthDateField({
             week={false}
             jump
             onPick={(date) => {
-              const [year, month, day] = date.split("-");
-              set({ birthYear: year, birthMonth: month, birthDay: day });
+              set({ birthDate: birthInputFrom(date) });
               setOpen(false);
+              requestAnimationFrame(() => input.current?.focus());
             }}
           />
         </div>
       )}
       {error && <FieldError id="setup-birth-error">{error}</FieldError>}
-    </fieldset>
+    </div>
   );
 }
 
@@ -221,7 +235,7 @@ export function SetupForm({ saved, today }: { saved: Profile | null; today: stri
       <TextField
         id="setup-weight"
         label="Weight"
-        hint={WHY}
+        info="Used only to estimate your needs. Stays on this device."
         unit={us ? { short: "lb", long: "pounds" } : { short: "kg", long: "kilograms" }}
         inputMode="decimal"
         autoComplete="off"
@@ -235,7 +249,7 @@ export function SetupForm({ saved, today }: { saved: Profile | null; today: stri
       <ChoiceField
         name="sex"
         legend="Sex"
-        hint="Calorie and vitamin estimates differ by sex; non-binary uses a blend of both. Stays on this device."
+        info="Calorie and vitamin estimates differ by sex; non-binary uses a blend of both. Stays on this device."
         options={SEX_OPTIONS}
         value={values.sex}
         onChange={(sex) => set({ sex })}
@@ -258,7 +272,6 @@ export function SetupForm({ saved, today }: { saved: Profile | null; today: stri
         <ChoiceField
           name="pattern"
           legend="How do you eat?"
-          hint="Suggestions only name foods that fit."
           options={PATTERN_OPTIONS}
           value={values.pattern}
           onChange={(pattern) => set({ pattern })}
@@ -266,7 +279,6 @@ export function SetupForm({ saved, today }: { saved: Profile | null; today: stri
         <CheckboxPills
           name="allergies"
           legend="Allergies or intolerances"
-          hint="Foods that contain these are flagged when you search, and suggestions leave them out."
           options={ALLERGEN_OPTIONS}
           values={values.allergies}
           onChange={(allergies) => set({ allergies })}

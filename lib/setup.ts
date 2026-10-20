@@ -25,9 +25,8 @@ export interface SetupValues {
   heightIn: string;
   heightCm: string;
   weight: string;
-  birthMonth: string;
-  birthDay: string;
-  birthYear: string;
+  /** Typed as month/day/year, e.g. "02/19/1995" (or picked from the calendar). */
+  birthDate: string;
   sex: Sex | null;
   activity: Activity | null;
   // Diet notes: optional, so they have defaults and no errors.
@@ -53,9 +52,7 @@ export const EMPTY_SETUP: SetupValues = {
   heightIn: "",
   heightCm: "",
   weight: "",
-  birthMonth: "",
-  birthDay: "",
-  birthYear: "",
+  birthDate: "",
   sex: null,
   activity: null,
   allergies: [],
@@ -63,17 +60,36 @@ export const EMPTY_SETUP: SetupValues = {
   lifeStage: "none",
 };
 
-const DATE_EXAMPLE = "like 03 14 1992";
+const DATE_EXAMPLE = "like 02/19/1995";
+
+/**
+ * Formats what's typed in the date of birth box. Digits alone get their
+ * slashes filled in (02191995 → 02/19/1995), since a phone's number pad has
+ * no "/"; text with a one-digit month or day ("2/19/1995") is kept as typed.
+ */
+export function formatBirthInput(raw: string): string {
+  const kept = raw.replace(/[^\d/]/g, "").slice(0, 10);
+  if (/(^|\/)\d\//.test(kept)) return kept;
+  const digits = kept.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+/** "YYYY-MM-DD" as the box shows it: "MM/DD/YYYY". */
+export function birthInputFrom(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  return `${month}/${day}/${year}`;
+}
 
 /** Reads month, day and year into "YYYY-MM-DD", checking the age is 18–100 on `today`. */
 function readBirthDate(values: SetupValues, today: string): { date?: string; error?: string } {
-  const fields = [values.birthMonth, values.birthDay, values.birthYear].map((text) => text.trim());
-  if (fields.every((text) => text === "")) return { error: "Choose your date of birth." };
-  if (!fields.every((text) => /^\d+$/.test(text))) {
-    return { error: `Enter your date of birth as numbers for month, day and year, ${DATE_EXAMPLE}.` };
-  }
-  const [month, day, year] = fields.map(Number);
-  if (fields[2].length !== 4) return { error: "Enter the year with four digits, like 1992." };
+  const text = values.birthDate.trim();
+  if (text === "") return { error: `Enter your date of birth, ${DATE_EXAMPLE}.` };
+  const parts = /^(\d{1,2})\/(\d{1,2})\/(\d+)$/.exec(text);
+  if (!parts) return { error: `Enter your date of birth as month/day/year, ${DATE_EXAMPLE}.` };
+  const [month, day, year] = parts.slice(1).map(Number);
+  if (parts[3].length !== 4) return { error: "Enter the year with four digits, like 1995." };
   if (month < 1 || month > 12) return { error: "Enter a month between 1 and 12." };
   if (!isRealDate(year, month, day)) return { error: `Enter a real date, ${DATE_EXAMPLE}.` };
 
@@ -161,16 +177,13 @@ export function validateSetup(values: SetupValues, today: string): { profile: Pr
 /** Prefills the form from a saved profile, for editing. */
 export function valuesFromProfile(profile: Profile): SetupValues {
   const { feet, inches } = cmToFeetInches(profile.heightCm);
-  const [year, month, day] = profile.birthDate.split("-");
   return {
     units: profile.units,
     heightFt: String(feet),
     heightIn: String(inches),
     heightCm: trimNumber(profile.heightCm),
     weight: profile.units === "us" ? trimNumber(profile.weightKg / KG_PER_LB) : trimNumber(profile.weightKg),
-    birthMonth: month,
-    birthDay: day,
-    birthYear: year,
+    birthDate: birthInputFrom(profile.birthDate),
     sex: profile.sex,
     activity: profile.activity,
     ...dietOf(profile),

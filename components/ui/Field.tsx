@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { AlertIcon } from "./icons";
+import { InfoButton } from "./InfoButton";
 
 // Shared form fields (design.md: Form field). Every field has a visible label,
 // an optional hint for "why we ask", and an error next to the field that says
@@ -25,6 +26,7 @@ export function TextField({
   error,
   invalid = false,
   unit,
+  info,
   className = "",
   "aria-describedby": extraDescribedBy,
   ...inputProps
@@ -37,6 +39,8 @@ export function TextField({
   invalid?: boolean;
   /** Shown after the input; `long` is read out with the label. */
   unit?: { short: string; long: string };
+  /** A note behind an ⓘ button beside the label, e.g. why we ask. */
+  info?: ReactNode;
 }) {
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -44,10 +48,13 @@ export function TextField({
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      <label htmlFor={id} className="text-[15px] font-bold">
-        {label}
-        {unit && <span className="sr-only"> in {unit.long}</span>}
-      </label>
+      <span className="flex items-center gap-1.5">
+        <label htmlFor={id} className="text-[15px] font-bold">
+          {label}
+          {unit && <span className="sr-only"> in {unit.long}</span>}
+        </label>
+        {info && <InfoButton label={`About ${label.toLowerCase()}`}>{info}</InfoButton>}
+      </span>
       {hint && (
         <p id={hintId} className="text-[13px] text-muted">
           {hint}
@@ -84,6 +91,7 @@ export function CheckboxPills<T extends string>({
   name,
   legend,
   hint,
+  info,
   options,
   values,
   onChange,
@@ -91,6 +99,8 @@ export function CheckboxPills<T extends string>({
   name: string;
   legend: string;
   hint?: ReactNode;
+  /** A note behind an ⓘ button beside the legend. */
+  info?: ReactNode;
   options: readonly { value: T; label: string }[];
   values: T[];
   onChange: (values: T[]) => void;
@@ -98,7 +108,10 @@ export function CheckboxPills<T extends string>({
   const hintId = hint ? `${name}-hint` : undefined;
   return (
     <fieldset className="flex flex-col gap-1.5" aria-describedby={hintId}>
-      <legend className="pb-1.5 text-[15px] font-bold">{legend}</legend>
+      <legend className="flex items-center gap-1.5 pb-1.5 text-[15px] font-bold">
+        {legend}
+        {info && <InfoButton label={`About ${legend.toLowerCase()}`}>{info}</InfoButton>}
+      </legend>
       {hint && (
         <p id={hintId} className="-mt-1.5 text-[13px] text-muted">
           {hint}
@@ -132,6 +145,7 @@ export function ChoiceField<T extends string>({
   name,
   legend,
   hint,
+  info,
   error,
   options,
   value,
@@ -140,6 +154,8 @@ export function ChoiceField<T extends string>({
   name: string;
   legend: string;
   hint?: ReactNode;
+  /** A note behind an ⓘ button beside the legend. */
+  info?: ReactNode;
   error?: string;
   options: readonly { value: T; label: string; description?: string }[];
   value: T | null;
@@ -151,7 +167,10 @@ export function ChoiceField<T extends string>({
 
   return (
     <fieldset className="flex flex-col gap-1.5" aria-describedby={describedBy(hintId, errorId)}>
-      <legend className="pb-1.5 text-[15px] font-bold">{legend}</legend>
+      <legend className="flex items-center gap-1.5 pb-1.5 text-[15px] font-bold">
+        {legend}
+        {info && <InfoButton label={`About ${legend.toLowerCase()}`}>{info}</InfoButton>}
+      </legend>
       {hint && (
         <p id={hintId} className="-mt-1.5 text-[13px] text-muted">
           {hint}

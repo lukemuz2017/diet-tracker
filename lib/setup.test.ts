@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { EMPTY_SETUP, switchUnits, validateSetup, valuesFromProfile, type SetupValues } from "./setup.ts";
+import { EMPTY_SETUP, formatBirthInput, switchUnits, validateSetup, valuesFromProfile, type SetupValues } from "./setup.ts";
 
 const TODAY = "2026-10-18";
 
@@ -10,9 +10,7 @@ const filled: SetupValues = {
   heightIn: "10",
   heightCm: "",
   weight: "160",
-  birthMonth: "03",
-  birthDay: "14",
-  birthYear: "1992",
+  birthDate: "03/14/1992",
   sex: "male",
   activity: "moderate",
   allergies: [],
@@ -21,7 +19,7 @@ const filled: SetupValues = {
 };
 
 const birthError = (month: string, day: string, year: string) =>
-  validateSetup({ ...filled, birthMonth: month, birthDay: day, birthYear: year }, TODAY).errors.birthDate;
+  validateSetup({ ...filled, birthDate: month || day || year ? `${month}/${day}/${year}` : "" }, TODAY).errors.birthDate;
 
 test("an empty form gets a message for every field", () => {
   const { profile, errors } = validateSetup(EMPTY_SETUP, TODAY);
@@ -51,12 +49,12 @@ test("height limits include exactly 4 ft and 7 ft 6 in", () => {
 });
 
 test("date of birth must be a real date in the past", () => {
-  assert.equal(birthError("", "", ""), "Choose your date of birth.");
-  assert.equal(birthError("02", "30", "1990"), "Enter a real date, like 03 14 1992.");
+  assert.equal(birthError("", "", ""), "Enter your date of birth, like 02/19/1995.");
+  assert.equal(birthError("02", "30", "1990"), "Enter a real date, like 02/19/1995.");
   assert.equal(birthError("13", "01", "1990"), "Enter a month between 1 and 12.");
-  assert.equal(birthError("03", "14", "92"), "Enter the year with four digits, like 1992.");
+  assert.equal(birthError("03", "14", "92"), "Enter the year with four digits, like 1995.");
   assert.equal(birthError("03", "14", "2030"), "Enter a date of birth in the past.");
-  assert.match(birthError("March", "14", "1992")!, /as numbers/);
+  assert.match(birthError("March", "14", "1992")!, /month\/day\/year/);
 });
 
 test("ages 18 to 100 are accepted, counted to the day", () => {
@@ -82,7 +80,7 @@ test("editing round-trips a saved profile", () => {
   assert.equal(values.heightFt, "5");
   assert.equal(values.heightIn, "10");
   assert.equal(values.weight, "160");
-  assert.deepEqual([values.birthMonth, values.birthDay, values.birthYear], ["03", "14", "1992"]);
+  assert.equal(values.birthDate, "03/14/1992");
 });
 
 test("diet notes are saved, and pregnancy is dropped for a male profile", () => {
@@ -99,4 +97,14 @@ test("an older profile without diet notes edits with the defaults", () => {
   delete old.lifeStage;
   const values = valuesFromProfile(old);
   assert.deepEqual([values.allergies, values.pattern, values.lifeStage], [[], "everything", "none"]);
+});
+
+test("typing a date of birth fills in the slashes", () => {
+  assert.equal(formatBirthInput("02191995"), "02/19/1995");
+  assert.equal(formatBirthInput("021"), "02/1");
+  assert.equal(formatBirthInput("02/"), "02");
+  assert.equal(formatBirthInput("02/19/1995"), "02/19/1995");
+  assert.equal(formatBirthInput("2/19/1995"), "2/19/1995");
+  assert.equal(formatBirthInput("02-19-1995x"), "02/19/1995");
+  assert.equal(validateSetup({ ...filled, birthDate: "2/9/1995" }, TODAY).errors.birthDate, undefined);
 });
