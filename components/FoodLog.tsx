@@ -5,6 +5,7 @@ import { AddFoodPanel } from "@/components/AddFood";
 import { AmountSelect } from "@/components/FoodRow";
 import { WeekCalendar } from "@/components/WeekCalendar";
 import { WeekRibbons } from "@/components/WeekRibbons";
+import { DashboardStickers } from "@/components/DashboardStickers";
 import { WeekSummary } from "@/components/WeekSummary";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -21,7 +22,7 @@ import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { useSavedData, type Entry, type SavedData } from "@/lib/storage";
 import { computeTargets } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
-import { WINDOW_DAYS, currentWindowEnd, dayState, type DayState } from "@/lib/week";
+import { WINDOW_DAYS, currentWindowEnd, dayState, summarizeWindow, type DayState } from "@/lib/week";
 
 // Dashboard, one page: a summary, a Today strip (where you log and mark the
 // day complete), and the week ribbons (each nutrient, each day, and the
@@ -39,6 +40,7 @@ export function FoodLog() {
   const end = currentWindowEnd(data.completeDays, today);
   const start = addDays(end, -(WINDOW_DAYS - 1));
   const firstFood = data.entries.length === 1;
+  const targets = computeTargets(data.profile, today);
 
   // Opened from a meal's "+ Add", that meal; otherwise a guess from the time of day.
   function openAdd(date: string, meal: Meal = mealAt(new Date())) {
@@ -47,7 +49,8 @@ export function FoodLog() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className="relative max-w-4xl">
+      <DashboardStickers summary={summarizeWindow(data, end, targets)} targets={targets} />
       <WeekSummary data={data} profile={data.profile} today={today} end={end} range={`${formatDay(start)} – ${formatDay(end)}`} />
 
       <TodayStrip data={data} today={today} onAdd={() => openAdd(today)} onOpen={() => setOpenDay(today)} />
