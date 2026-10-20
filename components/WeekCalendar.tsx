@@ -101,7 +101,6 @@ export function WeekCalendar({
           );
         })}
       </div>
-      {week && <p className="mt-2 text-xs text-muted">Tap a day to see the 7 days ending on it.</p>}
     </div>
   );
 }

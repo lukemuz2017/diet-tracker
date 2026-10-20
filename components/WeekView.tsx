@@ -17,7 +17,7 @@ export function History() {
   const router = useRouter();
   const requested = useSearchParams().get("end");
   const header = (
-    <PageHeader title="History" description="Pick a day to see the high-level stats for the 7 days that ended on it." />
+    <PageHeader title="History" />
   );
   if (!data?.profile || !today) return header;
 
