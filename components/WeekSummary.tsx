@@ -5,7 +5,7 @@ import { dietOf, type Profile } from "@/lib/profile";
 import type { SavedData } from "@/lib/storage";
 import { SUGGESTION_DAYS, summarize } from "@/lib/suggestions";
 import { computeTargets } from "@/lib/targets";
-import { WINDOW_DAYS, summarizeWindow } from "@/lib/week";
+import { summarizeWindow } from "@/lib/week";
 
 const KIND_LABEL = { good: "Going well", improve: "Could improve", big: "Bigger picture" } as const;
 /** Left edge: in range, under, over, or a general habit (kraft). */
@@ -26,12 +26,6 @@ export function WeekSummary({ data, profile, today, end, range }: { data: SavedD
       <div>
         <h1 className="font-display text-[34px] font-extrabold leading-none tracking-tight">Dashboard</h1>
         <p className="mt-1 text-sm text-muted">{range}</p>
-        {/* Until the week is full, say how many days the averages rest on. */}
-        {window.counted > 0 && window.counted < WINDOW_DAYS && (
-          <p className="text-xs font-bold text-muted">
-            Based on {window.counted} of {WINDOW_DAYS} days
-          </p>
-        )}
         <p id={verdictId} className="mt-2.5 font-display text-lg font-extrabold leading-tight text-leaf">
           {headline}
         </p>

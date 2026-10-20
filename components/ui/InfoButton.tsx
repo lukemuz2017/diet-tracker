@@ -11,10 +11,13 @@ export function InfoButton({
   label,
   children,
   anchor = "button",
+  align = "start",
 }: {
   label: string;
   children: ReactNode;
   anchor?: "button" | "parent";
+  /** With anchor="button": "end" opens the popover leftward, for buttons near the right edge. */
+  align?: "start" | "end";
 }) {
   const [open, setOpen] = useState(false);
   const popoverId = useId();
@@ -57,7 +60,7 @@ export function InfoButton({
         id={popoverId}
         hidden={!open}
         className={`absolute z-10 rounded-xl border-[1.5px] border-soil bg-white p-3 text-[13px] font-normal leading-relaxed text-soil shadow-[3px_3px_0_var(--color-kraft)] ${
-          anchor === "button" ? "left-0 top-9 w-72" : "inset-x-0 top-full mt-1"
+          anchor === "button" ? `${align === "end" ? "right-0" : "left-0"} top-9 w-72 max-w-[calc(100vw-3rem)]` : "inset-x-0 top-full mt-1"
         }`}
       >
         {children}

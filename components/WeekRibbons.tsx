@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { NutrientBar } from "@/components/NutrientBar";
+import { InfoButton } from "@/components/ui/InfoButton";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { DayBadge } from "@/components/WindowView";
 import { addDays, formatDay } from "@/lib/dates";
@@ -10,7 +11,7 @@ import { NUTRIENT_GROUPS, NUTRIENTS, type NutrientKey } from "@/lib/nutrients";
 import type { Profile } from "@/lib/profile";
 import type { SavedData } from "@/lib/storage";
 import { computeTargets } from "@/lib/targets";
-import { summarizeWindow, type DayState } from "@/lib/week";
+import { WINDOW_DAYS, summarizeWindow, type DayState } from "@/lib/week";
 
 const CELL: Record<string, string> = {
   "in-range": "bg-leaf",
@@ -96,7 +97,17 @@ export function WeekRibbons({
                 </span>
               </button>
             ))}
-            <span className="pl-3 text-xs font-bold text-leaf">Average</span>
+            <span className="flex items-center gap-1 pl-3 text-xs font-bold text-leaf">
+              Average
+              {/* Which days the average rests on, instead of a line in the summary card. */}
+              <InfoButton label="About the average" align="end">
+                <b>
+                  {summary.counted} of {WINDOW_DAYS} days count so far.
+                </b>{" "}
+                Each nutrient is averaged over the days in this week that you marked complete. Days not marked complete
+                (brown) and days not logged are left out, never counted as zero.
+              </InfoButton>
+            </span>
           </div>
 
           {NUTRIENT_GROUPS.flatMap((group) => group.keys).map((key) => {
