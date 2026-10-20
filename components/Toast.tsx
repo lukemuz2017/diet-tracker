@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { dismissToast, useToast } from "@/lib/toast";
 
-const SHOW_FOR_MS = 10000;
+const SHOW_FOR_MS = 1800;
 
 // design.md: Messages. Sits above the phone tab bar; announced politely.
 // The timer pauses while the pointer is over it or focus is inside it, so
