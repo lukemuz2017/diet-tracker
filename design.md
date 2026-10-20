@@ -8,7 +8,7 @@ The app's visual direction, chosen from four mood boards on Oct 18, 2026. The PD
 
 | Token | Hex | Use |
 |---|---|---|
-| `celery` | `#EEF2E4` | Page background |
+| `celery` | `#EEF2E4` | Light tint inside cards (summary tiles); was the page background |
 | `paper` | `#FBFCF7` | Cards and panels |
 | `soil` | `#1F2A1C` | Main text, value bars, dark message background |
 | `faded` | `#687063` | Grayed-out rows, e.g. days that don't count (4.7:1 on the detail panel) |
@@ -18,7 +18,7 @@ The app's visual direction, chosen from four mood boards on Oct 18, 2026. The PD
 | `tomato` | `#C8402A` | Form errors only |
 | `lemon` | `#F2C94C` | "To go" / below a minimum, highlights, stickers |
 | `kraft` | `#C9A27A` | Signature panels, sticker variety, image backgrounds |
-| `kraft-tint` | `#E9DCC8` | Dashboard page background (muted 5.8:1, leaf 4.7:1, soil 11:1) |
+| `kraft-tint` | `#E9DCC8` | Page background on every page (muted 5.8:1, leaf 4.7:1, soil 11:1) |
 | `line` | `#DDE5CF` | Dividers and card borders |
 | `track` | `#E1E8D6` | Empty part of a bar |
 | `band` | `#B9D3A8` | The target range on a bar |

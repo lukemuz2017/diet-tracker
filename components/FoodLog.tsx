@@ -71,8 +71,6 @@ export function FoodLog() {
 
   return (
     <div className="relative max-w-4xl">
-      {/* The Dashboard sits on brown-bag paper instead of the usual celery. */}
-      <div aria-hidden="true" className="fixed inset-0 -z-10 bg-kraft-tint" />
       {nothingYet ? (
         <section aria-labelledby="dashboard-first" className="mb-4 mt-1 flex flex-col items-start gap-4 rounded-card border-l-[6px] border-leaf bg-paper p-6 sm:mt-3 sm:p-8">
           <h1 className="font-display text-[34px] font-extrabold leading-none tracking-tight">Dashboard</h1>

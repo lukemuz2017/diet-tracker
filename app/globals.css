@@ -15,7 +15,7 @@
   --color-lemon: #f2c94c;
   --color-lemon-tint: #fbefc4;
   --color-kraft: #c9a27a;
-  /* Dashboard background: a light brown-bag tint. Muted text on it is 5.8:1, leaf 4.7:1. */
+  /* Page background: a light brown-bag tint. Muted text on it is 5.8:1, leaf 4.7:1. */
   --color-kraft-tint: #e9dcc8;
   --color-carrot: #d9773a;
   --color-line: #dde5cf;
@@ -34,7 +34,7 @@
 
 @layer base {
   body {
-    background: var(--color-celery);
+    background: var(--color-kraft-tint);
     color: var(--color-soil);
   }
 
