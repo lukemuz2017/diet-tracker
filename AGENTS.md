@@ -151,4 +151,5 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
 - 2026-10-20 (student): the Dashboard sits on a light brown-bag background (`kraft-tint` #e9dcc8; muted text 5.8:1, leaf 4.7:1) instead of celery; cards stay paper. (student) Then every page, so it's the body background.
 - 2026-10-20 (student): how many days the average rests on ("N of 7 days count so far", and why) is behind an ⓘ next to the ribbons' Average header, not a "Based on" line in the summary card. `InfoButton` has `align="end"` for buttons near the right edge.
 - 2026-10-20 (student): the Dashboard summary shows just the title and short dates ("Oct 13 – Oct 19", `formatShortDay`) beside the tiles; no verdict line ("Mostly balanced." / "A few things to work on.").
+- 2026-10-20 (student): on phones (below sm) the week grid shows 3 days at a time with ‹ › arrows (opens on the newest; `PHONE_DAYS` in `components/WeekRibbons.tsx`) instead of scrolling sideways; sm and up show all 7. The nutrient detail table's first column is "Day" with dates as "Oct 13".
 - Next: the weekend vs. weekday trend, a mobile layout pass, then deploy to Vercel and run the first-run check.

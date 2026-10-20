@@ -5,7 +5,7 @@ import { NutrientBar } from "@/components/NutrientBar";
 import { InfoButton } from "@/components/ui/InfoButton";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { DayBadge } from "@/components/WindowView";
-import { addDays, formatDay } from "@/lib/dates";
+import { addDays, formatDay, formatShortDay } from "@/lib/dates";
 import { NUTRIENT_KEYS, formatValue, statusFor } from "@/lib/log";
 import { NUTRIENT_GROUPS, NUTRIENTS, type NutrientKey } from "@/lib/nutrients";
 import type { Profile } from "@/lib/profile";
@@ -20,11 +20,13 @@ const CELL: Record<string, string> = {
   unknown: "bg-track",
 };
 const COUNTED: DayState[] = ["complete"];
-// Narrower name and average columns on phones, so more days fit.
+// On a phone the grid shows PHONE_DAYS days at a time, paged with arrows, so
+// nothing scrolls sideways; from sm up it shows all 7.
+const PHONE_DAYS = 3;
 const GRID =
-  "grid grid-cols-[6.5rem_repeat(7,minmax(2.25rem,1fr))_6.5rem] items-center gap-x-1.5 sm:grid-cols-[8.5rem_repeat(7,minmax(2.25rem,1fr))_9.5rem]";
-// The name column stays put while the days scroll sideways on a phone.
-const PINNED = "sticky left-0 z-[1] self-stretch bg-paper";
+  "grid grid-cols-[5.5rem_repeat(3,minmax(0,1fr))_5rem] items-center gap-x-1.5 sm:grid-cols-[8.5rem_repeat(7,minmax(2.25rem,1fr))_9.5rem]";
+// Between sm and a wide screen the 7 days can still scroll; the names stay put.
+const PINNED = "sm:sticky sm:left-0 sm:z-[1] self-stretch bg-paper";
 // The summary column says only where the average stands; the amounts and how
 // far to go are in the nutrient's detail.
 const SUMMARY: Record<string, string> = { "to-go": "Under", "in-range": "In range", over: "Over" };
@@ -52,6 +54,11 @@ export function WeekRibbons({
   onOpenDay: (date: string) => void;
 }) {
   const [expanded, setExpanded] = useState<NutrientKey | null>(null);
+  // Phone paging: the first of the PHONE_DAYS days shown, starting on the newest.
+  const lastStart = WINDOW_DAYS - PHONE_DAYS;
+  const [pageStart, setPageStart] = useState(lastStart);
+  const onPhonePage = (index: number) => index >= pageStart && index < pageStart + PHONE_DAYS;
+  const hideOnPhone = (index: number) => (onPhonePage(index) ? "" : "max-sm:hidden");
   const scroller = useRef<HTMLDivElement>(null);
   const [visibleWidth, setVisibleWidth] = useState<number | null>(null);
   useEffect(() => {
@@ -76,18 +83,41 @@ export function WeekRibbons({
 
   return (
     <div className="rounded-card bg-paper p-4 sm:p-5">
-      <div ref={scroller} className="overflow-x-auto">
-        <div className="min-w-[33rem] sm:min-w-[40rem]">
+      <div ref={scroller} className="sm:overflow-x-auto">
+        <div className="sm:min-w-[40rem]">
           {/* Column headers: each day's badge opens that day. */}
           <div className={`${GRID} pb-2`}>
-            <span className={`${PINNED} flex items-center pr-2 text-xs text-muted`}>Pick a day or a nutrient</span>
+            <span className={`${PINNED} flex items-center pr-2 text-xs text-muted`}>
+              <span className="max-sm:hidden">Pick a day or a nutrient</span>
+              {/* Phone: step through the week a few days at a time. */}
+              <span className="flex gap-1 sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => setPageStart((start) => Math.max(0, start - PHONE_DAYS))}
+                  disabled={pageStart === 0}
+                  aria-label="Earlier days"
+                  className="grid size-10 place-items-center rounded-full border-[1.5px] border-field text-lg font-bold text-soil disabled:opacity-30"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPageStart((start) => Math.min(lastStart, start + PHONE_DAYS))}
+                  disabled={pageStart === lastStart}
+                  aria-label="Later days"
+                  className="grid size-10 place-items-center rounded-full border-[1.5px] border-field text-lg font-bold text-soil disabled:opacity-30"
+                >
+                  ›
+                </button>
+              </span>
+            </span>
             {summary.days.map((day, index) => (
               <button
                 key={day.date}
                 type="button"
                 onClick={() => onOpenDay(day.date)}
                 aria-label={`Open ${dayName(day.date)}`}
-                className="flex flex-col items-center gap-0.5 rounded-xl py-1 text-xs text-muted hover:bg-track"
+                className={`flex flex-col items-center gap-0.5 rounded-xl py-1 text-xs text-muted hover:bg-track ${hideOnPhone(index)}`}
               >
                 <DayBadge state={day.state} share={dayShare[index]} />
                 {/* Weekday and date on one line, so the header stays one row tall. */}
@@ -129,7 +159,7 @@ export function WeekRibbons({
                     </span>
                     {label}
                   </button>
-                  {summary.days.map((day) => {
+                  {summary.days.map((day, index) => {
                     const value = day.totals[key];
                     const dayStatus = statusFor(key, targets[key], value);
                     const pending = day.foods > 0 && !COUNTED.includes(day.state);
@@ -146,7 +176,7 @@ export function WeekRibbons({
                         onClick={() => onOpenDay(day.date)}
                         aria-label={`${label}, ${dayName(day.date)}: ${words}`}
                         title={`${dayName(day.date)}: ${words}`}
-                        className={`h-6 rounded-md ${
+                        className={`h-6 rounded-md ${hideOnPhone(index)} ${
                           day.foods === 0 ? "border-[1.5px] border-dashed border-field" : pending ? "bg-kraft" : CELL[dayStatus.kind]
                         }`}
                       />
@@ -171,7 +201,7 @@ export function WeekRibbons({
                 {open && (
                   // Pinned and screen-wide, so the detail doesn't scroll sideways with the days.
                   <div className="sticky left-0" style={visibleWidth ? { width: visibleWidth } : undefined}>
-                    <NutrientDetail data={data} nutrientKey={key} summary={summary} targets={targets} dayName={dayName} />
+                    <NutrientDetail data={data} nutrientKey={key} summary={summary} targets={targets} />
                   </div>
                 )}
               </Fragment>
@@ -197,13 +227,11 @@ function NutrientDetail({
   nutrientKey,
   summary,
   targets,
-  dayName,
 }: {
   data: SavedData;
   nutrientKey: NutrientKey;
   summary: ReturnType<typeof summarizeWindow>;
   targets: ReturnType<typeof computeTargets>;
-  dayName: (date: string) => string;
 }) {
   const { label, unit } = NUTRIENTS[nutrientKey];
 
@@ -229,7 +257,7 @@ function NutrientDetail({
         <caption className="sr-only">{label} each day and the food that gave the most. Grayed days aren’t marked complete, so they’re left out of the average.</caption>
         <thead>
           <tr className="text-left text-xs font-bold uppercase tracking-[0.08em] text-leaf">
-            <th scope="col" className="pb-1 font-bold">Each day</th>
+            <th scope="col" className="pb-1 font-bold">Day</th>
             <th scope="col" className="pb-1 pl-3 text-right font-bold">{label}</th>
             <th scope="col" className="pb-1 pl-6 font-bold">Top source</th>
           </tr>
@@ -243,7 +271,7 @@ function NutrientDetail({
               // Days that don't count are grayed out; the average leaves them out.
               <tr key={day.date} className={counts ? "" : "text-faded"}>
                 <th scope="row" className="py-1 text-left font-normal">
-                  {dayName(day.date)}
+                  {formatShortDay(day.date)}
                   {!counts && <span className="sr-only"> (not counted)</span>}
                 </th>
                 <td className="py-1 pl-3 text-right tabular-nums">
