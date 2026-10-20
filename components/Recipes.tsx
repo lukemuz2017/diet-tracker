@@ -160,15 +160,12 @@ function PasteRecipe({ today, onSaved }: { today: string; onSaved: (recipe: Reci
         <label htmlFor={textId} className="text-[15px] font-bold">
           Recipe text
         </label>
-        <p className="text-[13px] text-muted">
-          Copy the whole recipe page, including its nutrition facts, and paste it here. Links can’t be opened, so paste the
-          text itself.
-        </p>
         <textarea
           id={textId}
           value={text}
           onChange={(event) => setText(event.target.value)}
           rows={6}
+          placeholder="Paste the recipe, including its nutrition facts"
           className="rounded-field border-[1.5px] border-field bg-white p-3 text-[15px]"
         />
       </div>
