@@ -110,16 +110,22 @@ export interface Tile {
   key?: NutrientKey;
 }
 
-export type Verdict = "waiting" | "balanced" | "mostly" | "work";
+export type Verdict = "waiting" | "early" | "balanced" | "mostly" | "work";
+
+/** The first week unlocks in stages (flows.md): suggestions need this many complete days. */
+export const SUGGESTION_DAYS = 3;
 
 export interface Summary {
   verdict: Verdict;
   headline: string;
   tiles: Tile[];
+  /** Complete days still needed before suggestions appear (0 once they do). */
+  daysToGo: number;
 }
 
 const HEADLINES: Record<Verdict, string> = {
   waiting: "Your summary starts once a day is complete.",
+  early: "Getting started.",
   balanced: "Balanced across the board.",
   mostly: "Mostly balanced.",
   work: "A few things to work on.",
@@ -191,7 +197,11 @@ function distance(value: number, edge: number): number {
 
 /** `diet` keeps example foods within the person's allergies and eating pattern. */
 export function summarize(summary: WindowSummary, targets: Targets, entries: Entry[], diet: Pick<Diet, "allergies" | "pattern"> = NO_DIET): Summary {
-  if (summary.counted === 0) return { verdict: "waiting", headline: HEADLINES.waiting, tiles: [] };
+  if (summary.counted === 0) return { verdict: "waiting", headline: HEADLINES.waiting, tiles: [], daysToGo: SUGGESTION_DAYS };
+  // One or two days is too little to judge a week on.
+  if (summary.counted < SUGGESTION_DAYS) {
+    return { verdict: "early", headline: HEADLINES.early, tiles: [], daysToGo: SUGGESTION_DAYS - summary.counted };
+  }
 
   const counted = new Set(summary.days.filter((day) => day.state === "complete").map((day) => day.date));
   const inRange: NutrientKey[] = [];
@@ -266,7 +276,7 @@ export function summarize(summary: WindowSummary, targets: Targets, entries: Ent
   tiles.push({ kind: "big", tone: "big", title: habit.title, tip: fill(habit.tip, diet) });
 
   const verdict: Verdict = off.length === 0 ? "balanced" : off.length <= 3 && inRange.length >= off.length * 2 ? "mostly" : "work";
-  return { verdict, headline: HEADLINES[verdict], tiles };
+  return { verdict, headline: HEADLINES[verdict], tiles, daysToGo: 0 };
 }
 
 /** "Cheese pizza" → "cheese pizza"; "Lentils, cooked" → "lentils" */

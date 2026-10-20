@@ -114,3 +114,12 @@ test("with no examples left, the suggestion falls back to plain words", () => {
   }).tiles[1].tip;
   assert.equal(tip, "Consider slightly bigger portions or an extra snack, like **bananas**, this week.");
 });
+
+test("suggestions wait for 3 complete days", () => {
+  const one = summarize(window({ ...balanced, carbs: 100 }, 1), targets, []);
+  assert.deepEqual([one.verdict, one.tiles.length, one.daysToGo], ["early", 0, 2]);
+  const two = summarize(window({ ...balanced, carbs: 100 }, 2), targets, []);
+  assert.equal(two.daysToGo, 1);
+  const three = summarize(window({ ...balanced, carbs: 100 }, 3), targets, []);
+  assert.deepEqual([three.verdict, three.tiles.length, three.daysToGo], ["mostly", 3, 0]);
+});

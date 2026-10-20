@@ -3,9 +3,9 @@
 import { useId } from "react";
 import { dietOf, type Profile } from "@/lib/profile";
 import type { SavedData } from "@/lib/storage";
-import { summarize } from "@/lib/suggestions";
+import { SUGGESTION_DAYS, summarize } from "@/lib/suggestions";
 import { computeTargets } from "@/lib/targets";
-import { summarizeWindow } from "@/lib/week";
+import { WINDOW_DAYS, summarizeWindow } from "@/lib/week";
 
 const KIND_LABEL = { good: "Going well", improve: "Could improve", big: "Bigger picture" } as const;
 /** Left edge: in range, under, over, or a general habit (kraft). */
@@ -19,13 +19,19 @@ export function WeekSummary({ data, profile, today, end, range }: { data: SavedD
   const verdictId = useId();
   const targets = computeTargets(profile, today);
   const window = summarizeWindow(data, end, targets);
-  const { verdict, headline, tiles } = summarize(window, targets, data.entries, dietOf(profile));
+  const { verdict, headline, tiles, daysToGo } = summarize(window, targets, data.entries, dietOf(profile));
 
   return (
     <section aria-describedby={verdictId} className="mb-4 mt-1 grid items-center gap-x-6 gap-y-3 rounded-card bg-paper p-4 sm:mt-3 sm:p-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
       <div>
         <h1 className="font-display text-[34px] font-extrabold leading-none tracking-tight">This week</h1>
         <p className="mt-1 text-sm text-muted">{range}</p>
+        {/* Until the week is full, say how many days the averages rest on. */}
+        {window.counted > 0 && window.counted < WINDOW_DAYS && (
+          <p className="text-xs font-bold text-muted">
+            Based on {window.counted} {window.counted === 1 ? "day" : "days"} so far
+          </p>
+        )}
         {end !== today && <p className="text-xs text-muted">Today joins once you mark it complete.</p>}
         <p id={verdictId} className="mt-2.5 font-display text-lg font-extrabold leading-tight text-leaf">
           {headline}
@@ -34,6 +40,14 @@ export function WeekSummary({ data, profile, today, end, range }: { data: SavedD
 
       {verdict === "waiting" ? (
         <p className="text-[15px] text-muted">Log a day’s food and mark it complete to see how your week balances.</p>
+      ) : verdict === "early" ? (
+        <p className="text-[15px] text-muted">
+          Suggestions start after {SUGGESTION_DAYS} complete days, so they rest on more than a day or two.{" "}
+          <b className="text-soil">
+            {daysToGo} to go.
+          </b>{" "}
+          Your averages so far are below.
+        </p>
       ) : (
         <ul className="grid gap-2.5 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
           {tiles.map((tile) => (
