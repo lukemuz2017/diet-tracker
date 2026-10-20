@@ -93,7 +93,7 @@ const GROUP_ACCENTS = ["border-leaf", "border-lemon", "border-carrot"];
 const STAT_ACCENTS: Record<string, string> = { Height: "border-leaf", Weight: "border-lemon", Age: "border-carrot" };
 
 /**
- * Your details as a farmers-market member card: kraft card, big stat tiles,
+ * Your details as a farmers-market member card: light green card (it stood out too little on the brown-bag page), big stat tiles,
  * sex and activity chips, the maintenance estimate as a lemon badge, and the
  * diet notes as tags.
  */
@@ -105,7 +105,7 @@ function MemberCard({ profile, today }: { profile: Profile; today: string }) {
   const kcal = Math.round(maintenanceCalories(profile, today) / 10) * 10;
 
   return (
-    <section aria-labelledby="details-title" className="flex flex-col gap-4 rounded-card border-[1.5px] border-kraft bg-kraft/30 p-5 shadow-[3px_4px_0_rgb(201_162_122_/_0.45)]">
+    <section aria-labelledby="details-title" className="flex flex-col gap-4 rounded-card border-[1.5px] border-band bg-celery p-5 shadow-[3px_4px_0_rgb(46_107_63_/_0.18)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span aria-hidden="true" className="grid size-11 place-items-center rounded-full bg-lemon font-display text-xl font-extrabold shadow-[0_2px_0_rgb(31_42_28_/_0.15)]">
@@ -137,7 +137,7 @@ function MemberCard({ profile, today }: { profile: Profile; today: string }) {
         </span>
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-kraft/60 pt-3">
+      <div className="flex flex-col gap-2 border-t border-band pt-3">
         <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-muted">Diet notes</h3>
         {diet.pattern === "everything" && diet.allergies.length === 0 && diet.lifeStage === "none" ? (
           <p className="text-sm">
