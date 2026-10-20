@@ -21,6 +21,7 @@ export function RecipesScreen() {
   const [justSaved, setJustSaved] = useState<Recipe | null>(null);
   const header = (
     <PageHeader
+      back={{ href: "/log", label: "Dashboard" }}
       title="Recipes"
       description="Build a recipe from ingredients once, then log it by the serving whenever you eat it."
     />
@@ -51,7 +52,7 @@ export function RecipesScreen() {
                     <b>{recipe.name}</b>
                     <span className="text-muted">
                       {" "}
-                      · makes {recipe.servings} · {formatValue(recipe.perServing.calories ?? 0)} kcal a serving
+                      · {recipe.servings > 1 ? `makes ${recipe.servings} · ${formatValue(recipe.perServing.calories ?? 0)} kcal a serving` : `${formatValue(recipe.perServing.calories ?? 0)} kcal`}
                     </span>
                   </span>
                   <Button variant="quiet" onClick={() => deleteRecipe(recipe.id)} aria-label={`Delete ${recipe.name}`}>
@@ -60,7 +61,7 @@ export function RecipesScreen() {
                 </li>
               ))}
             </ul>
-            <ButtonLink href="/log" variant="quiet" className="mt-2">
+            <ButtonLink href="/log?add=1" variant="quiet" className="mt-2">
               Log a recipe on Add food
             </ButtonLink>
           </Card>

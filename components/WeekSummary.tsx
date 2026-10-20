@@ -29,7 +29,7 @@ export function WeekSummary({ data, profile, today, end, range }: { data: SavedD
         {/* Until the week is full, say how many days the averages rest on. */}
         {window.counted > 0 && window.counted < WINDOW_DAYS && (
           <p className="text-xs font-bold text-muted">
-            Based on {window.counted} {window.counted === 1 ? "day" : "days"} so far
+            Based on {window.counted} of {WINDOW_DAYS} days
           </p>
         )}
         <p id={verdictId} className="mt-2.5 font-display text-lg font-extrabold leading-tight text-leaf">

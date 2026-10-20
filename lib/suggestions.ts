@@ -124,7 +124,7 @@ export interface Summary {
 }
 
 const HEADLINES: Record<Verdict, string> = {
-  waiting: "Your summary starts once a day is complete.",
+  waiting: "Your summary starts when you mark a day complete.",
   early: "Getting started.",
   balanced: "Balanced across the board.",
   mostly: "Mostly balanced.",

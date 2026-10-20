@@ -148,7 +148,11 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
             return (
               <li key={day.date} className="relative flex h-full flex-col justify-end" onMouseEnter={() => setActive(day.date)} onMouseLeave={() => setActive(null)}>
                 {active === day.date && (
-                  <span className="absolute bottom-full left-1/2 z-10 mb-1 w-max max-w-48 -translate-x-1/2 rounded-lg bg-soil px-2.5 py-1.5 text-xs text-paper shadow">
+                  <span
+                    className={`absolute bottom-full z-10 mb-1 w-max max-w-48 rounded-lg bg-soil px-2.5 py-1.5 text-xs text-paper shadow ${
+                      index < 2 ? "left-0" : index > summary.days.length - 3 ? "right-0" : "left-1/2 -translate-x-1/2"
+                    }`}
+                  >
                     {tip}
                   </span>
                 )}

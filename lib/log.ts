@@ -75,10 +75,14 @@ export function totalsFor(entries: Entry[]): DayTotals {
   return { totals, known, foods: entries.length };
 }
 
+/** The value as shown on screen: one decimal below 10, whole numbers above. */
+export function roundForDisplay(value: number): number {
+  return value < 10 ? Math.round(value * 10) / 10 : Math.round(value);
+}
+
 /** 2,340 · 62 · 4.5: one decimal below 10, whole numbers above. */
 export function formatValue(value: number): string {
-  const rounded = value < 10 ? Math.round(value * 10) / 10 : Math.round(value);
-  return rounded.toLocaleString("en-US");
+  return roundForDisplay(value).toLocaleString("en-US");
 }
 
 export type StatusKind = "to-go" | "in-range" | "over" | "unknown";
@@ -87,6 +91,8 @@ export type StatusKind = "to-go" | "in-range" | "over" | "unknown";
 export function statusFor(key: NutrientKey, target: Target, value: number | undefined): { kind: StatusKind; text: string } {
   const unit = NUTRIENTS[key].unit;
   if (value === undefined) return { kind: "unknown", text: "Not enough data" };
+  // Judge the number people see, so a shown "31 g" against "at least 31 g" is in range.
+  value = roundForDisplay(value);
   if ((target.kind === "range" || target.kind === "min") && value < target.min!) {
     return { kind: "to-go", text: `${formatValue(target.min! - value)} ${unit} to go` };
   }

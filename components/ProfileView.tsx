@@ -8,7 +8,7 @@ import { InfoButton } from "@/components/ui/InfoButton";
 import { formatValue } from "@/lib/log";
 import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { addDays, formatDay } from "@/lib/dates";
-import { ALLERGEN_OPTIONS, LIFE_STAGE_OPTIONS, PATTERN_OPTIONS, dietOf, profileFacts, type Profile } from "@/lib/profile";
+import { ALLERGEN_OPTIONS, LIFE_STAGE_OPTIONS, PATTERN_OPTIONS, dietOf, profileFacts, type Profile, asksLifeStage } from "@/lib/profile";
 import { isSample, SAMPLE_DAYS, withSample, withoutSample } from "@/lib/sample";
 import { updateData, useSavedData, type SavedData } from "@/lib/storage";
 import { showToast } from "@/lib/toast";
@@ -35,7 +35,7 @@ export function ProfileView() {
       <div className="flex max-w-2xl flex-col gap-5">
         {/* Right after setup, the next step comes first, not after the ranges. */}
         {firstVisit && (
-          <ButtonLink href="/log" className="min-h-12 self-start px-7 text-[17px]">
+          <ButtonLink href="/log?add=1" className="min-h-12 self-start px-7 text-[17px]">
             Log your first food
           </ButtonLink>
         )}
@@ -124,7 +124,7 @@ function MemberCard({ profile, today }: { profile: Profile; today: string }) {
         {["Height", "Weight", "Age"].map((label) => (
           <div key={label} className={`rounded-xl border-t-4 bg-paper px-3 py-2.5 ${STAT_ACCENTS[label]}`}>
             <dt className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">{label}</dt>
-            <dd className="font-display text-2xl font-extrabold leading-tight">{stat(label)}</dd>
+            <dd className="whitespace-nowrap font-display text-xl font-extrabold leading-tight sm:text-2xl">{stat(label)}</dd>
           </div>
         ))}
       </dl>
@@ -141,7 +141,7 @@ function MemberCard({ profile, today }: { profile: Profile; today: string }) {
         <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-muted">Diet notes</h3>
         {diet.pattern === "everything" && diet.allergies.length === 0 && diet.lifeStage === "none" ? (
           <p className="text-sm">
-            None yet. Add your eating pattern, allergies or a pregnancy in{" "}
+            None yet. Add your eating pattern{asksLifeStage(profile.sex) ? ", allergies or a pregnancy" : " or allergies"} in{" "}
             <Link href="/setup" className="font-bold text-leaf underline underline-offset-[3px]">
               Edit details
             </Link>

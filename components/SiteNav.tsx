@@ -11,6 +11,9 @@ const links = [
   { href: "/faq", label: "FAQ" },
 ] as const;
 
+/** Pages outside the nav highlight the item they belong to. */
+const SECTION_OF: Record<string, string> = { "/recipes": "/log", "/setup": "/profile" };
+
 // Shared navigation: pills in the header on wider screens, a bottom tab bar on
 // phones. Shown once setup is done, so the first visit stays one straight path.
 export function SiteNav() {
@@ -25,7 +28,7 @@ export function SiteNav() {
     >
       <ul className="flex justify-around gap-1 sm:justify-end">
         {links.map(({ href, label }) => {
-          const current = pathname === href;
+          const current = (SECTION_OF[pathname] ?? pathname) === href;
           return (
             <li key={href}>
               <Link

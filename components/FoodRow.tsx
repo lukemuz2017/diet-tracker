@@ -7,7 +7,16 @@ import { choicesWith, formatAmount, formatChoice, multipleFor, quantityFor, type
 import { formatValue, goodSourceTags } from "@/lib/log";
 import type { Nutrients } from "@/lib/nutrients";
 
-const TAG_TONES: StickerTone[] = ["lemon", "leaf", "kraft"];
+/** Each "what it adds" tag keeps its color wherever it appears. */
+const TAG_TONES: Record<string, StickerTone> = {
+  Fiber: "leaf",
+  Protein: "lemon",
+  Potassium: "kraft",
+  Calcium: "paper",
+  Iron: "kraft",
+  "Vitamin A": "lemon",
+  "Vitamin C": "leaf",
+};
 
 /** An amount picker in the food's own unit ("2 eggs", "½ cup", "3 oz"). */
 export function AmountSelect({
@@ -91,7 +100,7 @@ export function FoodRow({
           <span className="flex flex-wrap gap-1.5">
             <span className="sr-only">Good source of {tags.join(", ")}</span>
             {tags.map((tag, index) => (
-              <Sticker key={tag} tone={TAG_TONES[index]} index={index} aria-hidden="true" className="text-[11px]">
+              <Sticker key={tag} tone={TAG_TONES[tag] ?? "lemon"} index={index} aria-hidden="true" className="text-[11px]">
                 {tag}
               </Sticker>
             ))}

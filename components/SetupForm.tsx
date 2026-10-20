@@ -29,7 +29,12 @@ export function SetupScreen() {
       <PageHeader
         eyebrow={editing ? undefined : "Step 1 of 2"}
         title={editing ? "Edit your details" : "Your details"}
-        description="Six quick questions, plus optional diet notes. We use them only to estimate your daily ranges and tailor suggestions, and they stay on this device."
+        back={editing ? { href: "/profile", label: "Profile" } : undefined}
+        description={
+          editing
+            ? "Change anything and save. Your ranges update to match."
+            : "Six quick questions, plus optional diet notes. We use them only to estimate your daily ranges and tailor suggestions, and they stay on this device."
+        }
       />
       {/* The form waits for saved data so editing starts prefilled. */}
       {data && today && <SetupForm key={editing ? "edit" : "new"} saved={data.profile} today={today} />}

@@ -83,3 +83,9 @@ test("custom food errors say what to do", () => {
   assert.equal(errors.calories, "Enter calories as a number of kcal, like 120.");
   assert.equal(errors.potassium, "Enter 0 or more mg.");
 });
+
+test("status judges the rounded number that's shown", () => {
+  // 30.6 g shows as "31 g", so it meets "at least 31 g".
+  assert.equal(statusFor("fiber", { kind: "min", min: 31 }, 30.6).kind, "in-range");
+  assert.equal(statusFor("fiber", { kind: "min", min: 31 }, 30.4).kind, "to-go");
+});
