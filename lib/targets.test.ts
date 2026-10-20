@@ -102,3 +102,35 @@ test("targets read naturally", () => {
   assert.equal(formatTarget("fiber", t.fiber), "at least 41 g");
   assert.equal(formatTarget("sodium", t.sodium), "under 2,300 mg");
 });
+
+test("pregnancy uses the 2023 pregnancy equation from the second trimester", () => {
+  // Inactive: 1131.20 − 2.04×40 + 0.34×165 + 12.15×60 + 9.16×20 weeks + 200 (BMI 22) = 2217.9
+  assert.equal(maintenanceCalories({ ...woman, lifeStage: "pregnant1" }, TODAY), 1950);
+  assert.equal(maintenanceCalories({ ...woman, lifeStage: "pregnant2" }, TODAY), 2220);
+  // Third trimester: 14 more weeks × 9.16 = 2346.1
+  assert.equal(maintenanceCalories({ ...woman, lifeStage: "pregnant3" }, TODAY), 2350);
+});
+
+test("breastfeeding adds 540 − 140 kcal (0–6 months) or 380 (7–12 months)", () => {
+  assert.equal(maintenanceCalories({ ...woman, lifeStage: "breastfeeding06" }, TODAY), 2350); // 1950.9 + 400
+  assert.equal(maintenanceCalories({ ...woman, lifeStage: "breastfeeding712" }, TODAY), 2330); // 1950.9 + 380
+});
+
+test("pregnancy and breastfeeding raise protein, iron and vitamins", () => {
+  const pregnant = computeTargets({ ...woman, lifeStage: "pregnant2" }, TODAY);
+  assert.equal(pregnant.protein.min, 66); // 1.1 g/kg × 60
+  assert.deepEqual([pregnant.iron.min, pregnant.vitaminA.min, pregnant.vitaminC.min, pregnant.potassium.min], [27, 770, 85, 2900]);
+  const nursing = computeTargets({ ...woman, lifeStage: "breastfeeding06" }, TODAY);
+  assert.equal(nursing.protein.min, 78); // 1.3 g/kg × 60
+  assert.deepEqual([nursing.iron.min, nursing.vitaminA.min, nursing.vitaminC.min, nursing.potassium.min], [9, 1300, 120, 2800]);
+});
+
+test("a non-binary pregnancy uses the female equations and pregnancy values", () => {
+  const nb = { ...woman, sex: "nonbinary" as const, lifeStage: "pregnant2" as const };
+  assert.equal(maintenanceCalories(nb, TODAY), 2220);
+  assert.equal(computeTargets(nb, TODAY).iron.min, 27);
+});
+
+test("a life stage saved on a male profile is ignored", () => {
+  assert.equal(maintenanceCalories({ ...man, lifeStage: "pregnant2" }, TODAY), maintenanceCalories(man, TODAY));
+});

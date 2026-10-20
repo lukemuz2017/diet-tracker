@@ -3,7 +3,7 @@
 // checked by lib/targets.test.ts.
 
 import { NUTRIENTS, type NutrientKey } from "./nutrients.ts";
-import { ACTIVITY_OPTIONS, profileAge, type Activity, type Profile } from "./profile.ts";
+import { ACTIVITY_OPTIONS, dietOf, profileAge, type Activity, type LifeStage, type Profile } from "./profile.ts";
 
 export type TargetKind = "range" | "min" | "max";
 
@@ -68,6 +68,35 @@ const TEEN_EER: EquationSet = {
 };
 const TEEN_GROWTH_KCAL = 20;
 
+// Pregnancy, second and third trimesters, any age (National Academies 2023,
+// as published by Health Canada): the equation adds 9.16 kcal per week of
+// gestation and a constant set by BMI before pregnancy. The first trimester
+// uses the non-pregnant equation.
+const PREGNANCY_EER: Record<Activity, Coefficients> = {
+  sedentary: [1131.2, -2.04, 0.34, 12.15],
+  light: [693.35, -2.04, 5.73, 10.2],
+  moderate: [-223.84, -2.04, 13.23, 8.15],
+  very: [-779.72, -2.04, 18.45, 8.73],
+};
+const KCAL_PER_GESTATION_WEEK = 9.16;
+/** The middle week of each trimester (second: weeks 14–27, third: 28–40), since setup asks for the trimester. */
+const TRIMESTER_WEEK: Partial<Record<LifeStage, number>> = { pregnant2: 20, pregnant3: 34 };
+
+/** The pregnancy equation's BMI constant. Current BMI stands in for pre-pregnancy BMI. */
+function pregnancyBmiKcal(profile: Profile): number {
+  const bmi = profile.weightKg / (profile.heightCm / 100) ** 2;
+  if (bmi < 18.5) return 300;
+  if (bmi < 25) return 200;
+  if (bmi < 30) return 150;
+  return -50;
+}
+
+/** Breastfeeding adds milk energy: 540 kcal less 140 drawn from body stores at 0–6 months, 380 at 7–12. */
+const LACTATION_KCAL: Partial<Record<LifeStage, number>> = { breastfeeding06: 540 - 140, breastfeeding712: 380 };
+
+const isPregnant = (stage: LifeStage) => stage.startsWith("pregnant");
+const isBreastfeeding = (stage: LifeStage) => stage.startsWith("breastfeeding");
+
 /** Estimated energy requirement for one sex's equation, in kcal/day. */
 export function energyRequirement(sex: "male" | "female", profile: Profile, today: string): number {
   const age = profileAge(profile, today);
@@ -80,11 +109,28 @@ function roundTo(value: number, step: number): number {
   return Math.round(value / step) * step;
 }
 
+/** Energy for pregnancy or breastfeeding, which always uses the female equations. */
+function lifeStageEnergy(profile: Profile, today: string, stage: LifeStage): number {
+  const age = profileAge(profile, today);
+  const week = TRIMESTER_WEEK[stage];
+  if (week !== undefined) {
+    const [constant, a, h, w] = PREGNANCY_EER[profile.activity];
+    return constant + a * age + h * profile.heightCm + w * profile.weightKg + KCAL_PER_GESTATION_WEEK * week + pregnancyBmiKcal(profile);
+  }
+  const base = energyRequirement("female", profile, today);
+  const extra = LACTATION_KCAL[stage];
+  // The breastfeeding equations for ages under 19 leave out the growth allowance.
+  return extra === undefined ? base : base - (age <= 18 ? TEEN_GROWTH_KCAL : 0) + extra;
+}
+
 /**
  * Estimated calories to maintain current weight, rounded to 10 kcal.
- * Non-binary uses the midpoint of the female and male equations.
+ * Non-binary uses the midpoint of the female and male equations; pregnancy
+ * and breastfeeding use the female ones.
  */
 export function maintenanceCalories(profile: Profile, today: string): number {
+  const { lifeStage } = dietOf(profile);
+  if (lifeStage !== "none") return roundTo(lifeStageEnergy(profile, today, lifeStage), 10);
   if (profile.sex !== "nonbinary") return roundTo(energyRequirement(profile.sex, profile, today), 10);
   return roundTo((energyRequirement("female", profile, today) + energyRequirement("male", profile, today)) / 2, 10);
 }
@@ -116,12 +162,24 @@ const UPPER_LIMITS: Partial<Record<NutrientKey, ByBand>> = {
   vitaminC: band(1800, 2000, 2000, 2000, 2000),
 };
 
-/** A micronutrient target. Non-binary takes the higher of the two, so needs are covered. */
+// Pregnancy and breastfeeding RDAs (AI for potassium) as [ages 14–18, 19 and over].
+const LIFE_STAGE_MICRONUTRIENTS: Record<"pregnant" | "breastfeeding", Record<keyof typeof MICRONUTRIENTS, [number, number]>> = {
+  pregnant: { potassium: [2600, 2900], calcium: [1300, 1000], iron: [27, 27], vitaminA: [750, 770], vitaminC: [80, 85] },
+  breastfeeding: { potassium: [2500, 2800], calcium: [1300, 1000], iron: [10, 9], vitaminA: [1200, 1300], vitaminC: [115, 120] },
+};
+
+/**
+ * A micronutrient target. Non-binary takes the higher of the two, so needs
+ * are covered; pregnancy and breastfeeding have their own values.
+ */
 function micronutrient(key: keyof typeof MICRONUTRIENTS, profile: Profile, age: number): Target {
   const values = MICRONUTRIENTS[key];
   const group = ageBand(age);
-  const min =
-    profile.sex === "male"
+  const { lifeStage } = dietOf(profile);
+  const stage = isPregnant(lifeStage) ? "pregnant" : isBreastfeeding(lifeStage) ? "breastfeeding" : null;
+  const min = stage
+    ? LIFE_STAGE_MICRONUTRIENTS[stage][key][age <= 18 ? 0 : 1]
+    : profile.sex === "male"
       ? values.male[group]
       : profile.sex === "female"
         ? values.female[group]
@@ -130,10 +188,15 @@ function micronutrient(key: keyof typeof MICRONUTRIENTS, profile: Profile, age: 
   return upper ? { kind: "min", min, upper } : { kind: "min", min };
 }
 
-/** Protein in grams per kg of body weight: RDA floor (higher after 65), DGA/ACSM ceiling. */
+/**
+ * Protein in grams per kg of body weight: RDA floor (higher after 65, in
+ * pregnancy and while breastfeeding), DGA/ACSM ceiling.
+ */
 export function proteinPerKg(profile: Profile, age: number): { min: number; max: number } {
   const active = profile.activity === "moderate" || profile.activity === "very";
-  const min = age <= 18 ? 0.85 : age >= 65 ? (active ? 1.2 : 1.0) : 0.8;
+  const { lifeStage } = dietOf(profile);
+  const usual = age <= 18 ? 0.85 : age >= 65 ? (active ? 1.2 : 1.0) : 0.8;
+  const min = isPregnant(lifeStage) ? Math.max(usual, 1.1) : isBreastfeeding(lifeStage) ? Math.max(usual, 1.3) : usual;
   const max = profile.activity === "very" ? 2.0 : 1.6;
   return { min, max };
 }
@@ -151,7 +214,7 @@ export function computeTargets(profile: Profile, today: string): Targets {
   );
 
   let calories: Target = { kind: "range", min: roundTo(kcal * 0.9, 10), max: roundTo(kcal * 1.1, 10) };
-  if (profile.sex === "nonbinary") {
+  if (profile.sex === "nonbinary" && dietOf(profile).lifeStage === "none") {
     // A range spanning the female and male estimates, at least 10% either side.
     const female = energyRequirement("female", profile, today);
     const male = energyRequirement("male", profile, today);
@@ -190,6 +253,11 @@ export function formatTarget(key: NutrientKey, target: Target): string {
 }
 
 function groupName(profile: Profile, age: number): string {
+  const { lifeStage } = dietOf(profile);
+  if (lifeStage !== "none") {
+    const who = isPregnant(lifeStage) ? "pregnancy" : "breastfeeding";
+    return `${who}, ages ${age <= 18 ? "14–18" : "19 and over"}`;
+  }
   const who = profile.sex === "male" ? "men" : profile.sex === "female" ? "women" : "adults";
   const group = ageBand(age);
   return group === "14-18" ? `${who} 18 and under` : group === "71+" ? `${who} 71 and over` : `${who} ${group}`;
@@ -206,12 +274,30 @@ export function explainTarget(key: NutrientKey, profile: Profile, targets: Targe
 
   switch (key) {
     case "calories": {
+      const { lifeStage } = dietOf(profile);
+      if (lifeStage === "pregnant1") {
+        return `Your estimate is ${kcalText}. In the first trimester the National Academies’ 2023 equations use the usual female equation (${activity}), as needs barely change yet. The range allows about 10% either side.`;
+      }
+      if (isPregnant(lifeStage)) {
+        return `Your estimate is ${kcalText}, from the National Academies’ 2023 pregnancy equation (${activity}), taken at the middle of your trimester and adjusted for your BMI. Your doctor or midwife may suggest a different amount based on your weight gain.`;
+      }
+      if (isBreastfeeding(lifeStage)) {
+        const extra = LACTATION_KCAL[lifeStage]!;
+        return `Your estimate is ${kcalText}: the usual female equation (${activity}) plus ${extra} kcal for making milk, per the National Academies’ 2023 equations. The range allows about 10% either side.`;
+      }
       const who = profile.sex === "nonbinary" ? "the female and male equations, averaged" : `the ${profile.sex} equation`;
       return `Your maintenance estimate is ${kcalText}, from the National Academies’ 2023 energy equations (${who}, ${activity}, using your age, height and weight). These estimates are usually within about 10%, so the range allows for that. The real test is that your weight stays steady.`;
     }
     case "protein": {
       const perKg = proteinPerKg(profile, age);
-      const older = age >= 65 ? ", the higher amount suggested for adults over 65" : "";
+      const { lifeStage } = dietOf(profile);
+      const older = isPregnant(lifeStage)
+        ? ", the RDA in pregnancy"
+        : isBreastfeeding(lifeStage)
+          ? ", the RDA while breastfeeding"
+          : age >= 65
+            ? ", the higher amount suggested for adults over 65"
+            : "";
       return `At least ${perKg.min} g per kg of body weight (${target.min} g for you)${older}, up to ${perKg.max} g per kg (${target.max} g). The 2025–2030 Dietary Guidelines suggest aiming for 1.2–1.6 g per kg.`;
     }
     case "carbs":
@@ -224,7 +310,10 @@ export function explainTarget(key: NutrientKey, profile: Profile, targets: Targe
       return "Under 2,300 mg a day, the limit set by the National Academies and the 2025–2030 Dietary Guidelines. There’s no minimum to hit.";
     default: {
       const basis = key === "potassium" ? "Adequate Intake" : "Recommended Dietary Allowance";
-      const nonbinary = profile.sex === "nonbinary" ? ", using the higher of the female and male values so your needs are covered" : "";
+      const nonbinary =
+        profile.sex === "nonbinary" && dietOf(profile).lifeStage === "none"
+          ? ", using the higher of the female and male values so your needs are covered"
+          : "";
       const upper = target.upper
         ? ` More than ${formatAmount(target.upper)} ${unit} a day, usually from supplements, is above the safe upper limit.`
         : "";

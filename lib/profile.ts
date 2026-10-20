@@ -7,6 +7,9 @@ import { ageOn } from "./dates.ts";
 export type Units = "us" | "metric";
 export type Sex = "female" | "male" | "nonbinary";
 export type Activity = "sedentary" | "light" | "moderate" | "very";
+export type Allergen = "peanuts" | "treeNuts" | "dairy" | "eggs" | "gluten" | "soy" | "fish" | "shellfish" | "sesame";
+export type Pattern = "everything" | "vegetarian" | "pescatarian" | "vegan";
+export type LifeStage = "none" | "pregnant1" | "pregnant2" | "pregnant3" | "breastfeeding06" | "breastfeeding712";
 
 export interface Profile {
   units: Units;
@@ -16,6 +19,62 @@ export interface Profile {
   birthDate: string;
   sex: Sex;
   activity: Activity;
+  // Diet notes, added later, so older saves don't have them (see dietOf).
+  allergies?: Allergen[];
+  pattern?: Pattern;
+  /** Only for female and non-binary profiles. */
+  lifeStage?: LifeStage;
+}
+
+// The nine major US food allergens (FDA), with celiac disease under gluten.
+export const ALLERGEN_OPTIONS: { value: Allergen; label: string; contains: string }[] = [
+  { value: "peanuts", label: "Peanuts", contains: "peanuts" },
+  { value: "treeNuts", label: "Tree nuts", contains: "tree nuts" },
+  { value: "dairy", label: "Dairy / lactose", contains: "dairy" },
+  { value: "eggs", label: "Eggs", contains: "eggs" },
+  { value: "gluten", label: "Gluten (celiac)", contains: "gluten" },
+  { value: "soy", label: "Soy", contains: "soy" },
+  { value: "fish", label: "Fish", contains: "fish" },
+  { value: "shellfish", label: "Shellfish", contains: "shellfish" },
+  { value: "sesame", label: "Sesame", contains: "sesame" },
+];
+
+export const PATTERN_OPTIONS: { value: Pattern; label: string }[] = [
+  { value: "everything", label: "Everything" },
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "pescatarian", label: "Pescatarian" },
+  { value: "vegan", label: "Vegan" },
+];
+
+export const LIFE_STAGE_OPTIONS: { value: LifeStage; label: string; short: string }[] = [
+  { value: "none", label: "No", short: "" },
+  { value: "pregnant1", label: "Pregnant, first trimester", short: "Pregnant · 1st trimester" },
+  { value: "pregnant2", label: "Pregnant, second trimester", short: "Pregnant · 2nd trimester" },
+  { value: "pregnant3", label: "Pregnant, third trimester", short: "Pregnant · 3rd trimester" },
+  { value: "breastfeeding06", label: "Breastfeeding, baby 0–6 months", short: "Breastfeeding · 0–6 months" },
+  { value: "breastfeeding712", label: "Breastfeeding, baby 7–12 months", short: "Breastfeeding · 7–12 months" },
+];
+
+export interface Diet {
+  allergies: Allergen[];
+  pattern: Pattern;
+  lifeStage: LifeStage;
+}
+
+/** A profile's diet notes with defaults, ignoring anything unrecognized (and life stage for male profiles). */
+export function dietOf(profile: Profile): Diet {
+  const allergies = Array.isArray(profile.allergies)
+    ? profile.allergies.filter((item) => ALLERGEN_OPTIONS.some((option) => option.value === item))
+    : [];
+  const pattern = PATTERN_OPTIONS.some((option) => option.value === profile.pattern) ? profile.pattern! : "everything";
+  const lifeStage =
+    profile.sex !== "male" && LIFE_STAGE_OPTIONS.some((option) => option.value === profile.lifeStage) ? profile.lifeStage! : "none";
+  return { allergies, pattern, lifeStage };
+}
+
+/** Whether the pregnancy and breastfeeding question applies. */
+export function asksLifeStage(sex: Sex | null): boolean {
+  return sex === "female" || sex === "nonbinary";
 }
 
 export const SEX_OPTIONS: { value: Sex; label: string }[] = [

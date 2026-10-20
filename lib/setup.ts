@@ -2,7 +2,21 @@
 // to do next (AGENTS.md: Forms). Checked by lib/setup.test.ts.
 
 import { ageOn, isRealDate } from "./dates.ts";
-import { CM_PER_INCH, KG_PER_LB, cmToFeetInches, trimNumber, type Activity, type Profile, type Sex, type Units } from "./profile.ts";
+import {
+  CM_PER_INCH,
+  KG_PER_LB,
+  asksLifeStage,
+  cmToFeetInches,
+  dietOf,
+  trimNumber,
+  type Activity,
+  type Allergen,
+  type LifeStage,
+  type Pattern,
+  type Profile,
+  type Sex,
+  type Units,
+} from "./profile.ts";
 
 /** What the person typed, kept as strings so an error never changes it. */
 export interface SetupValues {
@@ -16,6 +30,10 @@ export interface SetupValues {
   birthYear: string;
   sex: Sex | null;
   activity: Activity | null;
+  // Diet notes: optional, so they have defaults and no errors.
+  allergies: Allergen[];
+  pattern: Pattern;
+  lifeStage: LifeStage;
 }
 
 export type SetupField = "height" | "weight" | "birthDate" | "sex" | "activity";
@@ -40,6 +58,9 @@ export const EMPTY_SETUP: SetupValues = {
   birthYear: "",
   sex: null,
   activity: null,
+  allergies: [],
+  pattern: "everything",
+  lifeStage: "none",
 };
 
 const DATE_EXAMPLE = "like 03 14 1992";
@@ -128,6 +149,10 @@ export function validateSetup(values: SetupValues, today: string): { profile: Pr
       birthDate: birth.date!,
       sex: values.sex!,
       activity: values.activity!,
+      allergies: values.allergies,
+      pattern: values.pattern,
+      // Only asked for female and non-binary; a hidden answer isn't kept.
+      lifeStage: asksLifeStage(values.sex) ? values.lifeStage : "none",
     },
     errors,
   };
@@ -148,6 +173,7 @@ export function valuesFromProfile(profile: Profile): SetupValues {
     birthYear: year,
     sex: profile.sex,
     activity: profile.activity,
+    ...dietOf(profile),
   };
 }
 

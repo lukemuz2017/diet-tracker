@@ -4,26 +4,92 @@
 // at the food-group level, not a specific food to add. Foods in the text are
 // wrapped in ** so the page can show them in bold.
 
+import { clashes, type Tag } from "./diet.ts";
 import { formatValue, NUTRIENT_KEYS, statusFor } from "./log.ts";
 import { NUTRIENTS, type NutrientKey } from "./nutrients.ts";
+import type { Diet } from "./profile.ts";
 import type { Entry } from "./storage.ts";
 import { formatTarget, type Targets } from "./targets.ts";
 import type { WindowSummary } from "./week.ts";
 
+/**
+ * A suggestion with example foods. {list} becomes up to three examples that
+ * fit the person's allergies and eating pattern; if none fit, the fallback
+ * is used. Each example is [word, ...what it contains].
+ */
+interface TipText {
+  text: string;
+  examples: [string, ...Tag[]][];
+  fallback: string;
+}
+
 /** What to try when a nutrient's average is low: food groups, with everyday examples. */
-const LOW_TIPS: Record<NutrientKey, string> = {
-  calories: "Consider slightly bigger portions or an extra snack, like **nuts** or **yogurt**, this week.",
-  protein: "Consider adding protein foods, like **beans**, **eggs**, **fish** or **chicken**, this week.",
-  carbs: "Consider adding some grains, like **rice**, **oats** or **whole-wheat bread**, this week.",
-  fat: "Consider adding healthy fats, like **nuts**, **avocado** or **olive oil**, this week.",
-  fiber: "Consider adding **beans**, **lentils** or **whole grains** this week.",
-  sodium: "",
-  potassium: "Consider adding **potatoes**, **beans** or **bananas** this week.",
-  calcium: "Consider adding dairy, like **yogurt**, **milk** or **cheese**, this week.",
-  iron: "Consider adding **beans**, **lentils** or **leafy greens** this week.",
-  vitaminA: "Consider adding orange vegetables or leafy greens, like **sweet potatoes**, **carrots** or **spinach**, this week.",
-  vitaminC: "Consider adding fruit or peppers, like **oranges**, **strawberries** or **bell peppers**, this week.",
+const LOW_TIPS: Partial<Record<NutrientKey, TipText>> = {
+  calories: {
+    text: "Consider slightly bigger portions or an extra snack, like {list}, this week.",
+    examples: [["nuts", "treeNuts"], ["yogurt", "dairy"], ["hummus", "sesame"], ["bananas"]],
+    fallback: "Consider slightly bigger portions or an extra snack this week.",
+  },
+  protein: {
+    text: "Consider adding protein foods, like {list}, this week.",
+    examples: [["beans"], ["eggs", "eggs"], ["fish", "fish"], ["chicken", "meat"], ["tofu", "soy"], ["lentils"]],
+    fallback: "Consider adding a protein food to more meals this week.",
+  },
+  carbs: {
+    text: "Consider adding some grains, like {list}, this week.",
+    examples: [["rice"], ["oats"], ["whole-wheat bread", "gluten"], ["quinoa"]],
+    fallback: "Consider adding some grains this week.",
+  },
+  fat: {
+    text: "Consider adding healthy fats, like {list}, this week.",
+    examples: [["nuts", "treeNuts"], ["avocado"], ["olive oil"], ["salmon", "fish"]],
+    fallback: "Consider adding some healthy fats this week.",
+  },
+  fiber: {
+    text: "Consider adding {list} this week.",
+    examples: [["beans"], ["lentils"], ["whole grains"]],
+    fallback: "Consider adding more beans, vegetables and whole grains this week.",
+  },
+  potassium: {
+    text: "Consider adding {list} this week.",
+    examples: [["potatoes"], ["beans"], ["bananas"]],
+    fallback: "Consider adding more fruit and vegetables this week.",
+  },
+  calcium: {
+    text: "Consider adding calcium-rich foods, like {list}, this week.",
+    examples: [["yogurt", "dairy"], ["milk", "dairy"], ["cheese", "dairy"], ["tofu", "soy"], ["fortified soy milk", "soy"], ["leafy greens"], ["fortified orange juice"]],
+    fallback: "Consider adding calcium-rich foods this week.",
+  },
+  iron: {
+    text: "Consider adding {list} this week.",
+    examples: [["beans"], ["lentils"], ["leafy greens"]],
+    fallback: "Consider adding iron-rich foods this week.",
+  },
+  vitaminA: {
+    text: "Consider adding orange vegetables or leafy greens, like {list}, this week.",
+    examples: [["sweet potatoes"], ["carrots"], ["spinach"]],
+    fallback: "Consider adding orange vegetables or leafy greens this week.",
+  },
+  vitaminC: {
+    text: "Consider adding fruit or peppers, like {list}, this week.",
+    examples: [["oranges"], ["strawberries"], ["bell peppers"]],
+    fallback: "Consider adding fruit or peppers this week.",
+  },
 };
+
+const NO_DIET: Pick<Diet, "allergies" | "pattern"> = { allergies: [], pattern: "everything" };
+
+/** Fills a tip's {list} with up to three examples that fit the diet notes. */
+function fill(tip: TipText | string, diet: Pick<Diet, "allergies" | "pattern">): string {
+  if (typeof tip === "string") return tip;
+  const words = tip.examples
+    .filter(([, ...tags]) => !clashes(tags, diet))
+    .slice(0, 3)
+    .map(([word]) => `**${word}**`);
+  if (words.length === 0) return tip.fallback;
+  const list = words.length === 1 ? words[0] : `${words.slice(0, -1).join(", ")} or ${words.at(-1)}`;
+  return tip.text.replace("{list}", list);
+}
 
 /** Which on-track nutrient to praise first: the harder wins lead. */
 const GOOD_ORDER: NutrientKey[] = ["fiber", "vitaminC", "potassium", "calcium", "iron", "vitaminA", "protein", "carbs", "fat", "calories", "sodium"];
@@ -64,7 +130,7 @@ const HEADLINES: Record<Verdict, string> = {
  * triggered a rule; a rule is skipped when it would only repeat the
  * "could improve" tile.
  */
-const HABITS: { title: string; tip: string; keys: (low: Set<NutrientKey>, high: Set<NutrientKey>) => NutrientKey[] }[] = [
+const HABITS: { title: string; tip: TipText | string; keys: (low: Set<NutrientKey>, high: Set<NutrientKey>) => NutrientKey[] }[] = [
   {
     title: "Fill up on produce",
     tip: "Try making half your plate **vegetables** and **fruit** at two meals a day.",
@@ -75,7 +141,11 @@ const HABITS: { title: string; tip: string; keys: (low: Set<NutrientKey>, high: 
   },
   {
     title: "Fuller days",
-    tip: "Your days run light. Try a fuller lunch, or plan an afternoon snack like **nuts** or **yogurt**.",
+    tip: {
+      text: "Your days run light. Try a fuller lunch, or plan an afternoon snack like {list}.",
+      examples: [["nuts", "treeNuts"], ["yogurt", "dairy"], ["hummus", "sesame"], ["fruit"]],
+      fallback: "Your days run light. Try a fuller lunch, or plan an afternoon snack.",
+    },
     keys: (low) => (low.has("calories") && ["carbs", "protein", "fat"].some((key) => low.has(key as NutrientKey)) ? (["calories", "carbs", "protein", "fat"] as NutrientKey[]).filter((key) => low.has(key)) : []),
   },
   {
@@ -90,12 +160,20 @@ const HABITS: { title: string; tip: string; keys: (low: Set<NutrientKey>, high: 
   },
   {
     title: "Protein at each meal",
-    tip: "Build each meal around a protein, like **eggs**, **beans**, **fish** or **tofu**.",
+    tip: {
+      text: "Build each meal around a protein, like {list}.",
+      examples: [["eggs", "eggs"], ["beans"], ["fish", "fish"], ["tofu", "soy"], ["chicken", "meat"], ["lentils"]],
+      fallback: "Build each meal around a protein.",
+    },
     keys: (low) => (low.has("protein") ? ["protein"] : []),
   },
   {
     title: "Mix in minerals",
-    tip: "Add a **dairy** food or **leafy greens** to one meal a day.",
+    tip: {
+      text: "Add foods like {list} to one meal a day.",
+      examples: [["yogurt", "dairy"], ["leafy greens"], ["beans"], ["tofu", "soy"]],
+      fallback: "Add a calcium- or iron-rich food to one meal a day.",
+    },
     keys: (low) => (["calcium", "iron"] as NutrientKey[]).filter((key) => low.has(key)),
   },
 ];
@@ -111,7 +189,8 @@ function distance(value: number, edge: number): number {
   return Math.abs(value - edge) / edge;
 }
 
-export function summarize(summary: WindowSummary, targets: Targets, entries: Entry[]): Summary {
+/** `diet` keeps example foods within the person's allergies and eating pattern. */
+export function summarize(summary: WindowSummary, targets: Targets, entries: Entry[], diet: Pick<Diet, "allergies" | "pattern"> = NO_DIET): Summary {
   if (summary.counted === 0) return { verdict: "waiting", headline: HEADLINES.waiting, tiles: [] };
 
   const counted = new Set(summary.days.filter((day) => day.state === "complete").map((day) => day.date));
@@ -169,7 +248,7 @@ export function summarize(summary: WindowSummary, targets: Targets, entries: Ent
       detail: detailFor(worst.key),
       tip:
         worst.direction === "low"
-          ? LOW_TIPS[worst.key]
+          ? fill(LOW_TIPS[worst.key]!, diet)
           : source
             ? `Mostly from **${shortName(source)}**. Consider having it a little less often this week.`
             : "Consider cutting back a little this week.",
@@ -184,7 +263,7 @@ export function summarize(summary: WindowSummary, targets: Targets, entries: Ent
       const keys = rule.keys(low, high);
       return keys.length > 0 && !keys.every((key) => key === worst?.key);
     }) ?? DEFAULT_HABIT;
-  tiles.push({ kind: "big", tone: "big", title: habit.title, tip: habit.tip });
+  tiles.push({ kind: "big", tone: "big", title: habit.title, tip: fill(habit.tip, diet) });
 
   const verdict: Verdict = off.length === 0 ? "balanced" : off.length <= 3 && inRange.length >= off.length * 2 ? "mostly" : "work";
   return { verdict, headline: HEADLINES[verdict], tiles };

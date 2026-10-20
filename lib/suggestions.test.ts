@@ -92,3 +92,25 @@ test("going well prefers a food win over staying under the sodium limit", () => 
   assert.equal(onlySodium.tiles[0].title, "Sodium is on track");
   assert.equal(onlySodium.tiles[0].tip, "Keep it up.");
 });
+
+test("suggested foods respect allergies and eating pattern", () => {
+  const improveTip = (diet: Parameters<typeof summarize>[3]) => summarize(window({ ...balanced, protein: 30 }), targets, [], diet).tiles[1].tip;
+  // Everyone: the first three examples.
+  assert.ok(improveTip({ allergies: [], pattern: "everything" }).includes("**beans**, **eggs** or **fish**"));
+  const vegan = improveTip({ allergies: [], pattern: "vegan" });
+  assert.ok(!/eggs|fish|chicken/.test(vegan));
+  assert.ok(vegan.includes("**beans**") && vegan.includes("**tofu**"));
+  const veganSoyFree = improveTip({ allergies: ["soy"], pattern: "vegan" });
+  assert.ok(!veganSoyFree.includes("tofu"));
+  const calcium = summarize(window({ ...balanced, calcium: 500 }), targets, [], { allergies: ["dairy"], pattern: "everything" }).tiles[1].tip;
+  assert.ok(!["**yogurt**", "**milk**", "**cheese**"].some((word) => calcium.includes(word)));
+  assert.ok(calcium.includes("**fortified soy milk**"));
+});
+
+test("with no examples left, the suggestion falls back to plain words", () => {
+  const tip = summarize(window({ ...balanced, calories: 1500, carbs: 140, fat: 60, protein: 80 }), targets, [], {
+    allergies: ["treeNuts", "dairy", "sesame"],
+    pattern: "everything",
+  }).tiles[1].tip;
+  assert.equal(tip, "Consider slightly bigger portions or an extra snack, like **bananas**, this week.");
+});

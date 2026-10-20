@@ -15,6 +15,9 @@ const filled: SetupValues = {
   birthYear: "1992",
   sex: "male",
   activity: "moderate",
+  allergies: [],
+  pattern: "everything",
+  lifeStage: "none",
 };
 
 const birthError = (month: string, day: string, year: string) =>
@@ -80,4 +83,20 @@ test("editing round-trips a saved profile", () => {
   assert.equal(values.heightIn, "10");
   assert.equal(values.weight, "160");
   assert.deepEqual([values.birthMonth, values.birthDay, values.birthYear], ["03", "14", "1992"]);
+});
+
+test("diet notes are saved, and pregnancy is dropped for a male profile", () => {
+  const female = validateSetup({ ...filled, sex: "female", allergies: ["gluten"], pattern: "vegan", lifeStage: "pregnant2" }, TODAY).profile!;
+  assert.deepEqual([female.allergies, female.pattern, female.lifeStage], [["gluten"], "vegan", "pregnant2"]);
+  const male = validateSetup({ ...filled, lifeStage: "pregnant2" }, TODAY).profile!;
+  assert.equal(male.lifeStage, "none");
+});
+
+test("an older profile without diet notes edits with the defaults", () => {
+  const old = validateSetup(filled, TODAY).profile!;
+  delete old.allergies;
+  delete old.pattern;
+  delete old.lifeStage;
+  const values = valuesFromProfile(old);
+  assert.deepEqual([values.allergies, values.pattern, values.lifeStage], [[], "everything", "none"]);
 });

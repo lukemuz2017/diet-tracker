@@ -22,10 +22,28 @@ All targets are judged on the rolling 7-day average. W = body weight in kg; kcal
 
 **Upper limits** are mostly reached through supplements, not food. The app shows "Above safe upper limit" for calcium, iron and vitamin C.
 
+**Pregnancy and breastfeeding** (added Oct 19, 2026; asked only when sex is female or non-binary, and always using the female equations and values):
+
+| | Rule in the app | Source |
+|---|---|---|
+| Calories, 1st trimester | The usual non-pregnant equation. | [S4] |
+| Calories, 2nd–3rd trimester | National Academies 2023 pregnancy equation by activity level: constant − 2.04 × age + h × height + w × weight + 9.16 × weeks of gestation + a BMI constant (+300 under 18.5, +200 at 18.5–24.9, +150 at 25–29.9, −50 at 30+). Setup asks for the trimester, so the app uses its middle week (20 or 34), and current BMI stands in for pre-pregnancy BMI. | [S4] |
+| Calories, breastfeeding | The non-pregnant female equation + 540 − 140 kcal at 0–6 months (milk energy less energy drawn from body stores), + 380 kcal at 7–12 months. | [S4] |
+| Protein | Minimum 1.1 g/kg in pregnancy, 1.3 g/kg while breastfeeding (RDA). | [S10] |
+| Potassium (AI) | Pregnancy 2,600 mg (14–18) / 2,900 mg (19+); breastfeeding 2,500 / 2,800 mg. | [S19], [S9] |
+| Calcium | Unchanged: 1,300 mg (14–18) / 1,000 mg (19+). | [S20] |
+| Iron | Pregnancy 27 mg; breastfeeding 10 mg (14–18) / 9 mg (19+). | [S21], [S27] |
+| Vitamin A | Pregnancy 750 / 770 mcg RAE; breastfeeding 1,200 / 1,300 mcg RAE. | [S22], [S27] |
+| Vitamin C | Pregnancy 80 / 85 mg; breastfeeding 115 / 120 mg. | [S23], [S27] |
+
+The ⓘ text for calories says a doctor or midwife may suggest a different amount, since needs in pregnancy depend on weight gain.
+
+**Allergies and eating patterns** (added Oct 19, 2026) don't change any target. They tag the built-in foods (`lib/diet.ts`) with the nine major US allergens [S28], with gluten standing in for celiac disease [S29], and with meat or fish for vegetarian, pescatarian and vegan patterns. Matching foods are flagged in search, and suggestions only name foods that fit. Oats are not tagged, since they're naturally gluten-free, though people with celiac disease should choose certified gluten-free oats [S29]. Vegans see a note about vitamin B12, which the app doesn't track.
+
 **Considered but not used**
 - Mifflin-St Jeor × activity factors: Mifflin-St Jeor is still recommended for *resting* energy [S5], [S6], but the common 1.2–1.725 multipliers couldn't be traced to an authority.
 - AHA's 1,500 mg sodium ideal, and WHO's 2,000 mg [S17], [S18].
-- Smokers' +35 mg vitamin C and vegetarians' 1.8× iron. These would need extra setup questions.
+- Smokers' +35 mg vitamin C (would need another setup question) and vegetarians' 1.8× iron (the eating pattern is now asked, but this isn't applied yet).
 - Added sugar is not tracked, by the student's choice.
 
 **Where sources disagree:** DGA 2025–2030 protein (1.2–1.6 g/kg) vs. the unchanged RDA (0.8 g/kg); Harvard criticizes the higher protein push [S26]. WHO suggests fat ≤30% and fiber ≥25 g [S18].
@@ -54,3 +72,6 @@ All targets are judged on the rolling 7-day average. W = body weight in kg; kcal
 - [S24] Sex-specific nutrition recommendations for transgender people: https://digitalcommons.wustl.edu/oa_4/1626
 - [S25] eatright.org on transgender nutrition: https://www.eatright.org/health/wellness/healthful-habits/how-to-approach-sex-specific-nutrition-recommendations-for-transgender-people
 - [S26] Harvard Nutrition Source on DGA 2025–2030: https://nutritionsource.hsph.harvard.edu/2026/01/09/dietary-guidelines-for-americans-2025-2030/
+- [S27] NIH ODS, dietary supplements and life stages: pregnancy: https://ods.od.nih.gov/factsheets/Pregnancy-HealthProfessional/
+- [S28] FDA, food allergies (the nine major allergens): https://www.fda.gov/food/food-labeling-nutrition/food-allergies
+- [S29] Celiac Disease Foundation, gluten-free diet: https://celiac.org/gluten-free-living/gluten-free-foods/
