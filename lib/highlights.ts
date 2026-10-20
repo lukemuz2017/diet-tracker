@@ -1,4 +1,4 @@
-// A day's highlights on the Foods tab: up to three nutrients it got in range
+// A day's highlights in the day panel: up to three nutrients it got in range
 // (the harder wins first) and at most one heads-up for something over.
 
 import { statusFor } from "./log.ts";

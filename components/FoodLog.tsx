@@ -1,7 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { useId, useState } from "react";
 import { AddFoodPanel } from "@/components/AddFood";
 import { AmountSelect } from "@/components/FoodRow";
 import { WeekCalendar } from "@/components/WeekCalendar";
@@ -24,33 +23,21 @@ import { computeTargets } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
 import { WINDOW_DAYS, currentWindowEnd, dayState, type DayState } from "@/lib/week";
 
-type Tab = "progress" | "foods";
-const TABS: { value: Tab; label: string }[] = [
-  { value: "progress", label: "Progress" },
-  { value: "foods", label: "Foods" },
-];
-
-// Dashboard, one page with two views (like a profile's segmented tabs):
-// Progress shows week ribbons (each nutrient, each day, and the average
-// that counts); Foods lists what was eaten each day. "+ Add food" opens a
-// pop-up form; clicking a day opens that day in a side panel.
+// Dashboard, one page: a summary, a Today strip (where you log and mark the
+// day complete), and the week ribbons (each nutrient, each day, and the
+// average that counts). "+ Add food" opens a pop-up form; clicking a day
+// opens that day in a side panel.
 export function FoodLog() {
   const data = useSavedData();
   const today = useToday();
-  const requestedTab = useSearchParams().get("tab");
-  const [tab, setTab] = useState<Tab>(requestedTab === "foods" ? "foods" : "progress");
   const [addDate, setAddDate] = useState<string | null>(null);
   const [addMeal, setAddMeal] = useState<Meal>("breakfast");
   const [openDay, setOpenDay] = useState<string | null>(null);
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const baseId = useId();
   if (!data?.profile || !today) return <PageHeader title="Dashboard" />;
 
   // The 7 days that count: ending yesterday until today is marked complete.
   const end = currentWindowEnd(data.completeDays, today);
   const start = addDays(end, -(WINDOW_DAYS - 1));
-  // Foods tab: today first, then back to the start of the window.
-  const days = Array.from({ length: WINDOW_DAYS + (end === today ? 0 : 1) }, (_, i) => addDays(today, -i));
   const firstFood = data.entries.length === 1;
 
   // Opened from a meal's "+ Add", that meal; otherwise a guess from the time of day.
@@ -59,52 +46,11 @@ export function FoodLog() {
     setAddDate(date);
   }
 
-  function onTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-    const next = (index + (event.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length;
-    setTab(TABS[next].value);
-    tabRefs.current[next]?.focus();
-  }
-
   return (
     <div className="max-w-4xl">
       <WeekSummary data={data} profile={data.profile} today={today} end={end} range={`${formatDay(start)} – ${formatDay(end)}`} />
 
-      {/* The view toggle and Add food share one row. */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Dashboard views" className="flex min-w-0 max-w-md flex-1 gap-1 rounded-full border-[1.5px] border-field bg-white p-1">
-          {TABS.map((item, index) => (
-            <button
-              key={item.value}
-              ref={(element) => {
-                tabRefs.current[index] = element;
-              }}
-              type="button"
-              role="tab"
-              id={`${baseId}-tab-${item.value}`}
-              aria-selected={tab === item.value}
-              aria-controls={`${baseId}-panel-${item.value}`}
-              tabIndex={tab === item.value ? 0 : -1}
-              onClick={() => setTab(item.value)}
-              onKeyDown={(event) => onTabKey(event, index)}
-              className={`min-h-11 flex-1 rounded-full px-5 text-[15px] font-bold ${
-                tab === item.value ? "bg-soil text-paper" : "text-soil hover:bg-track"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          onClick={() => openAdd(today)}
-          className="inline-flex min-h-12 items-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
-        >
-          <PlusIcon width={20} height={20} strokeWidth={2.25} />
-          Add food
-        </button>
-      </div>
+      <TodayStrip data={data} today={today} onAdd={() => openAdd(today)} onOpen={() => setOpenDay(today)} />
 
       <Dialog open={addDate !== null} onClose={() => setAddDate(null)} title="Add food">
         {addDate && (
@@ -127,28 +73,12 @@ export function FoodLog() {
 
       {firstFood && (
         <p role="status" className="mb-5 rounded-2xl bg-leaf-tint px-4 py-3 text-[15px]">
-          <b>First food logged.</b> When you’re done eating for the day, mark it complete on the Foods tab and it joins
-          your 7-day numbers.
+          <b>First food logged.</b> When you’re done eating for the day, mark it complete in the Today row and it joins
+          your numbers.
         </p>
       )}
 
-      <div
-        role="tabpanel"
-        id={`${baseId}-panel-${tab}`}
-        aria-labelledby={`${baseId}-tab-${tab}`}
-        tabIndex={0}
-        className="rounded-card focus-visible:outline-offset-4"
-      >
-        {tab === "progress" ? (
-          <WeekRibbons data={data} profile={data.profile} today={today} end={end} onOpenDay={setOpenDay} />
-        ) : (
-          <div className="flex flex-col gap-5">
-            {days.map((day, index) => (
-              <DayCard key={day} data={data} date={day} today={today} tilt={TAG_TILTS[index % TAG_TILTS.length]} onAdd={(meal) => openAdd(day, meal)} />
-            ))}
-          </div>
-        )}
-      </div>
+      <WeekRibbons data={data} profile={data.profile} today={today} end={end} onOpenDay={setOpenDay} />
     </div>
   );
 }
@@ -207,24 +137,52 @@ function DayPicker({ date, today, earliest, onPick }: { date: string; today: str
   );
 }
 
-/** Alternating leans for the date tags, so the list looks hand-hung. */
-const TAG_TILTS = [-3, 2, -2, 3, -1.5, 2.5, -2.5];
-
 /**
- * A kraft price tag with the weekday and date, like the card on a crate at a
- * market stand. Decorative: the day's heading carries the date in words.
+ * Today, above the week: calories so far, status, Add food and Mark complete.
+ * Today isn't in the ribbons until it's complete, so this is where it lives.
  */
-function DateTag({ date, tilt }: { date: string; tilt: number }) {
+function TodayStrip({ data, today, onAdd, onOpen }: { data: SavedData; today: string; onAdd: () => void; onOpen: () => void }) {
+  const { totals, foods } = totalsFor(data.entries.filter((entry) => entry.date === today));
+  const marked = data.completeDays.includes(today);
+  const chip = STATE_CHIP[dayState(foods, marked)];
   return (
-    <div
-      aria-hidden="true"
-      className="relative w-16 flex-none rounded-[10px_10px_12px_12px] bg-kraft pb-2 pt-3.5 text-center shadow-[2px_3px_0_rgb(31_42_28_/_0.13)]"
-      style={{ transform: `rotate(${tilt}deg)` }}
-    >
-      <span className="absolute left-1/2 top-1.5 size-[7px] -translate-x-1/2 rounded-full bg-paper" />
-      <span className="block text-[11px] font-bold tracking-[0.1em]">{weekdayName(date).slice(0, 3).toUpperCase()}</span>
-      <span className="block font-display text-[28px] font-extrabold leading-none">{Number(date.slice(8))}</span>
-    </div>
+    <section aria-label="Today" className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-card border-l-[6px] border-kraft bg-paper p-3 sm:px-5">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+        <h2 className="font-display text-xl font-extrabold">Today</h2>
+        <span className="text-sm text-muted">{formatDay(today)}</span>
+        <span className="text-[15px] font-bold">{foods > 0 ? `${formatValue(totals.calories ?? 0)} kcal` : "Nothing logged yet"}</span>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${chip.className}`}>{chip.text}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {foods > 0 && (
+          <>
+            <button type="button" onClick={onOpen} className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-bold text-leaf hover:bg-track">
+              See meals
+            </button>
+            <button
+              type="button"
+              aria-pressed={marked}
+              onClick={() => setDayComplete(today, !marked)}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-bold ${
+                marked ? "bg-leaf text-white hover:bg-leaf-dark" : "border-[1.5px] border-soil text-soil hover:bg-track"
+              }`}
+            >
+              {marked && <CheckIcon width={16} height={16} strokeWidth={2.5} />}
+              {marked ? "Day complete" : "Mark complete"}
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          onClick={onAdd}
+          className="inline-flex min-h-12 items-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
+        >
+          <PlusIcon width={20} height={20} strokeWidth={2.25} />
+          Add food
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -240,21 +198,18 @@ const STATE_CHIP: Record<DayState, { text: string; className: string }> = {
   missed: { text: "Not logged", className: "border-[1.5px] border-dashed border-muted text-muted" },
 };
 
-/** One day on the Foods tab: name, calories, status, its foods, and actions. */
+/** One day in the side panel: calories, status, highlights, its foods, and actions. */
 function DayCard({
   data,
   date,
   today,
   onAdd,
-  tilt = 0,
   inPanel = false,
 }: {
   data: SavedData;
   date: string;
   today: string;
   onAdd: (meal: Meal) => void;
-  /** Degrees the date tag leans, alternating down the list. */
-  tilt?: number;
   /** In the side panel: no card, and the panel title names the day. */
   inPanel?: boolean;
 }) {
@@ -266,18 +221,14 @@ function DayCard({
   const Box = inPanel ? "div" : Card;
   const canToggle = foods > 0;
   const showDate = date === today || date === addDays(today, -1);
-  // On the Foods tab a day starts as a one-line card with "See more"; the side
-  // panel shows its meals straight away.
-  const [seeMore, setSeeMore] = useState(false);
   const detailsId = useId();
-  const showDetails = inPanel || seeMore;
+  const showDetails = true;
   const { wins, headsUp } = dayHighlights(totals, computeTargets(data.profile!, today));
   const shortName = date === today ? "Today" : date === addDays(today, -1) ? "Yesterday" : weekdayName(date);
 
   return (
     <Box className="flex flex-col gap-3">
       <div className="flex items-start gap-4">
-        {!inPanel && <DateTag date={date} tilt={tilt} />}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -319,20 +270,6 @@ function DayCard({
             </ul>
           )}
 
-          {!inPanel && (
-            <button
-              type="button"
-              aria-expanded={seeMore}
-              aria-controls={detailsId}
-              onClick={() => setSeeMore((value) => !value)}
-              className="-ml-1.5 inline-flex min-h-10 items-center gap-1.5 self-start rounded-full px-1.5 text-sm font-bold text-leaf hover:bg-track"
-            >
-              {seeMore ? "See less" : "See more"}
-              <span aria-hidden="true" className={`text-xs transition-transform ${seeMore ? "rotate-180" : ""}`}>
-                ▾
-              </span>
-            </button>
-          )}
         </div>
       </div>
 

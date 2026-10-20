@@ -126,7 +126,7 @@ export function WindowView({
         <Card>
           <p className="text-[15px]">
             {end === today
-              ? "Your weekly balance starts when you finish your first day. Mark today complete on the Foods tab, or come back tomorrow."
+              ? "Your weekly balance starts when you finish your first day. Mark today complete on the Dashboard, or come back tomorrow."
               : "No complete days in this week."}
           </p>
         </Card>

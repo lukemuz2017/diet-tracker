@@ -107,7 +107,11 @@ const SECTIONS: { title: string; tone: string; questions: { q: string; a: ReactN
 export default function FaqPage() {
   return (
     <>
-      <PageHeader title="FAQ" description="How Diet Tracker works, in a few short answers." />
+      <PageHeader title="FAQ" />
+      <p className="mb-5 max-w-2xl rounded-card border-l-[6px] border-leaf bg-leaf-tint p-4 font-display text-lg font-extrabold leading-snug sm:p-5 sm:text-xl">
+        Diet Tracker keeps your week balanced, not your weight lower. Log what you eat, mark the day complete, and see
+        which nutrients are on track.
+      </p>
       <div className="flex max-w-2xl flex-col gap-5">
         {SECTIONS.map((section) => (
           <section key={section.title} className={`rounded-card border-t-[6px] bg-paper p-4 sm:p-5 ${section.tone}`}>
