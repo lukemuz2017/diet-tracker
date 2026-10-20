@@ -179,7 +179,7 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
           </svg>
           Line: your average as the days add up
         </span>
-        <span>Faded bars: not marked complete, so they don’t count.</span>
+        <span>Faded bars: not marked complete</span>
       </p>
 
       <details>

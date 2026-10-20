@@ -146,7 +146,7 @@ export function WeekRibbons({
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-lemon align-[-2px]" />Under</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-carrot align-[-2px]" />Over</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border-[1.5px] border-dashed border-field align-[-2px]" />Not logged</span>
-        <span>Faded: not marked complete, so it doesn’t count yet.</span>
+        <span>Faded: not marked complete</span>
       </div>
     </div>
   );
