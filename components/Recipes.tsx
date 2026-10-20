@@ -232,7 +232,6 @@ function BuildRecipe({
   onSaved: (recipe: Recipe) => void;
 }) {
   const [name, setName] = useState("");
-  const [servings, setServings] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [hint, setHint] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -248,21 +247,20 @@ function BuildRecipe({
     return { key: choice.key, name: choice.name, detail: `${formatAmount(spec, spec.base)} · ${formatValue(choice.perBase.calories ?? 0)} kcal` };
   });
 
-  const servingsProblem = servingsError(servings);
   const nameProblem = name.trim() ? undefined : "Enter a recipe name, like Chicken chili.";
   const ingredientsProblem = ingredients.length ? undefined : "Add at least one ingredient.";
-  const perServing = !servingsProblem && ingredients.length ? perServingFromIngredients(ingredients, Number(servings)) : null;
+  // The recipe is one serving; log half or double of it when you add it.
+  const perServing = ingredients.length ? perServingFromIngredients(ingredients, 1) : null;
 
   function save(event: FormEvent) {
     event.preventDefault();
     setSubmitted(true);
-    if (nameProblem || servingsProblem || ingredientsProblem) {
-      document.getElementById(nameProblem ? "build-name" : servingsProblem ? "build-servings" : "build-ingredients")?.focus();
+    if (nameProblem || ingredientsProblem) {
+      document.getElementById(nameProblem ? "build-name" : "build-ingredients")?.focus();
       return;
     }
-    onSaved(saveRecipe({ name: name.trim(), servings: Number(servings), perServing: perServing!, ingredients }));
+    onSaved(saveRecipe({ name: name.trim(), servings: 1, perServing: perServing!, ingredients }));
     setName("");
-    setServings("");
     setIngredients([]);
     setSubmitted(false);
   }
@@ -276,17 +274,9 @@ function BuildRecipe({
         onChange={(event) => setName(event.target.value)}
         error={submitted ? nameProblem : undefined}
       />
-      <TextField
-        id="build-servings"
-        label="Servings it makes"
-        inputMode="numeric"
-        value={servings}
-        onChange={(event) => setServings(event.target.value)}
-        error={submitted ? servingsProblem : undefined}
-      />
-
       <div className="flex flex-col gap-3">
         <FoodSearch
+          label="Add to recipe"
           options={options}
           onPick={(key) => {
             // Picking adds it at the usual amount; change the amount in the list.
@@ -352,7 +342,7 @@ function BuildRecipe({
 
       {perServing && (
         <p className="rounded-2xl bg-leaf-tint px-4 py-3 text-[15px]">
-          <b>Per serving:</b> {formatValue(perServing.calories ?? 0)} kcal
+          <b>Whole recipe:</b> {formatValue(perServing.calories ?? 0)} kcal
           {(["protein", "carbs", "fat"] as const).map((key) =>
             perServing[key] !== undefined ? ` · ${formatValue(perServing[key]!)} g ${NUTRIENTS[key].label.toLowerCase()}` : "",
           )}
