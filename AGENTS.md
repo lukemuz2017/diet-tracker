@@ -133,4 +133,5 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
 - 2026-10-20 (student): in Build from ingredients, picking a food adds it at once (its usual amount); the amount is changed in the Ingredients list. No separate "Add to recipe" step.
 - 2026-10-20 (student): Build from ingredients has just a recipe name and "Add to recipe" search; no servings field. A built recipe is one serving (the whole recipe), and you log half, one or more servings of it. Pasted recipes still read their serving count.
 - 2026-10-20 (student): saving a recipe no longer offers to log it. A recipe is saved for later and appears under Meals & recipes in Add food, where you pick the number of servings eaten.
+- 2026-10-20 (student): Add food stages foods: picking one puts it on a "To add" list (amount and Remove on each, with a kcal total), and a single "Add N foods to [meal]" button adds them all, with one Undo. Nothing is logged until that button.
 - Next: the weekend vs. weekday trend, a mobile layout pass, then deploy to Vercel and run the first-run check.

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CustomFoodForm } from "@/components/CustomFoodForm";
-import { FoodRow } from "@/components/FoodRow";
+import { AmountSelect, FoodRow } from "@/components/FoodRow";
 import { FoodSearch, type SearchOption } from "@/components/FoodSearch";
-import { addFood } from "@/lib/actions";
-import { formatAmount, quantityFor } from "@/lib/amounts";
+import { Button } from "@/components/ui/Button";
+import { addFoods } from "@/lib/actions";
+import { formatAmount, multipleFor, quantityFor } from "@/lib/amounts";
 import { formatDay } from "@/lib/dates";
 import { CATEGORY_ORDER, FOODS, amountFor, categoryOf } from "@/lib/foods";
 import { formatValue, recentFoods } from "@/lib/log";
@@ -26,6 +27,15 @@ interface Choice {
 
 type Mode = "foods" | "meals";
 
+/** A food picked but not added yet. */
+interface Staged {
+  uid: string;
+  name: string;
+  foodId?: string;
+  perServing: Nutrients;
+  multiple: number;
+}
+
 function toOption(choice: Choice, diet: Diet): SearchOption {
   const spec = amountFor(choice.foodId);
   const kcal = choice.perServing.calories;
@@ -38,24 +48,58 @@ function toOption(choice: Choice, diet: Diet): SearchOption {
   };
 }
 
-// Adding food to one day: a search with a Foods / Meals & recipes toggle,
-// plus links to browse all foods, add your own, or make a recipe. The page's
-// "+ Add food" button opens it.
-export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; date: string; meal: Meal; today: string }) {
+// Adding food to one meal: a search with a Foods / Meals & recipes toggle,
+// plus links to browse all foods, add your own, or make a recipe. Picking a
+// food puts it on a "To add" list (amounts can be changed there); one button
+// adds the whole list to the meal. The page's "+ Add food" button opens it.
+export function AddFoodPanel({
+  data,
+  date,
+  meal,
+  today,
+  onDone,
+}: {
+  data: SavedData;
+  date: string;
+  meal: Meal;
+  today: string;
+  onDone: () => void;
+}) {
   const [mode, setMode] = useState<Mode>("foods");
-  const [picked, setPicked] = useState<string | null>(null);
+  const [staged, setStaged] = useState<Staged[]>([]);
+  const counter = useRef(0);
   const [extra, setExtra] = useState<"browse" | "own" | null>(null);
   const [ownName, setOwnName] = useState("");
   const isToday = date === today;
   const dayLabel = isToday ? "today" : formatDay(date);
   const diet = dietOf(data.profile!);
 
-  function add(food: { name: string; foodId?: string; perServing: Nutrients }, multiple: number) {
-    const spec = amountFor(food.foodId);
-    const what = `${formatAmount(spec, quantityFor(spec, multiple))} of ${food.name.toLowerCase()}`;
-    const mealName = MEALS.find((item) => item.value === meal)!.label.toLowerCase();
-    addFood(food, multiple, date, meal, `Added ${what} to ${isToday ? "" : `${formatDay(date)} `}${mealName}`);
-    setPicked(null);
+  const mealName = MEALS.find((item) => item.value === meal)!.label.toLowerCase();
+
+  function stage(food: { name: string; foodId?: string; perServing: Nutrients }, multiple: number) {
+    counter.current += 1;
+    setStaged((list) => [...list, { uid: `staged-${counter.current}`, ...food, multiple }]);
+  }
+
+  function commit() {
+    if (staged.length === 0) {
+      onDone();
+      return;
+    }
+    const where = `${isToday ? "" : `${formatDay(date)} `}${mealName}`;
+    const [only] = staged;
+    const spec = amountFor(only.foodId);
+    const message =
+      staged.length === 1
+        ? `Added ${formatAmount(spec, quantityFor(spec, only.multiple))} of ${only.name.toLowerCase()} to ${where}`
+        : `Added ${staged.length} foods to ${where}`;
+    addFoods(
+      staged.map((item) => ({ food: item, servings: item.multiple })),
+      date,
+      meal,
+      message,
+    );
+    onDone();
   }
 
   const recent = recentFoods(data.entries, 100);
@@ -94,7 +138,8 @@ export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; dat
     mode === "foods"
       ? recentFoodKeys.map((key) => options.find((option) => option.key === key)).filter((option): option is SearchOption => Boolean(option))
       : options;
-  const pickedChoice = [...foodChoices, ...mealChoices].find((choice) => choice.key === picked);
+  const allChoices = [...foodChoices, ...mealChoices];
+  const totalKcal = staged.reduce((sum, item) => sum + (item.perServing.calories ?? 0) * item.multiple, 0);
 
   function addOwn(name: string) {
     setOwnName(name);
@@ -108,7 +153,6 @@ export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; dat
       aria-pressed={mode === value}
       onClick={() => {
         setMode(value);
-        setPicked(null);
       }}
       className={`min-h-11 flex-1 rounded-full px-4 text-sm font-bold ${
         mode === value ? "bg-soil text-paper" : "text-soil hover:bg-track"
@@ -132,30 +176,58 @@ export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; dat
             placeholder={mode === "foods" ? "Try “eggs” or “rice”" : mealChoices.length ? "Type a name, or pick one below" : "No saved meals yet"}
             options={options}
             emptyOptions={emptyOptions}
-            onPick={setPicked}
+            onPick={(key) => {
+              const choice = allChoices.find((item) => item.key === key);
+              if (choice) stage(choice, choice.multiple);
+            }}
             onAddOwn={addOwn}
           />
 
-        {pickedChoice && (
-          <div className="rounded-field border-[1.5px] border-leaf px-3">
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs font-bold uppercase tracking-[0.08em] text-leaf">Add to {dayLabel}</span>
-              <button type="button" onClick={() => setPicked(null)} className="text-sm font-bold text-leaf underline underline-offset-[3px]">
-                Clear
-              </button>
-            </div>
-            <ul>
-              <FoodRow
-                key={pickedChoice.key}
-                name={pickedChoice.name}
-                spec={amountFor(pickedChoice.foodId)}
-                perBase={pickedChoice.perServing}
-                defaultMultiple={pickedChoice.multiple}
-                warnings={warningsFor(pickedChoice.foodId, diet)}
-                onAdd={(multiple) => add(pickedChoice, multiple)}
-              />
+        {staged.length > 0 && (
+          <section aria-label="Foods to add" className="rounded-field border-[1.5px] border-leaf px-3 pb-1 pt-2">
+            <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-leaf">
+              To add to {mealName} · {dayLabel} · {formatValue(totalKcal)} kcal
+            </h3>
+            <ul className="divide-y divide-line">
+              {staged.map((item) => {
+                const spec = amountFor(item.foodId);
+                const warnings = warningsFor(item.foodId, diet);
+                return (
+                  <li key={item.uid} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">
+                    <span className="min-w-0">
+                      <b className="block leading-snug">{item.name}</b>
+                      <span className="text-sm text-muted">{formatValue((item.perServing.calories ?? 0) * item.multiple)} kcal</span>
+                      {warnings.map((warning) => (
+                        <span key={warning} className="ml-2 rounded-full bg-carrot/25 px-2 py-0.5 text-xs font-bold">
+                          {warning}
+                        </span>
+                      ))}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <AmountSelect
+                        id={`${item.uid}-amount`}
+                        label={`Amount of ${item.name}`}
+                        spec={spec}
+                        quantity={quantityFor(spec, item.multiple)}
+                        onChange={(quantity) =>
+                          setStaged((list) =>
+                            list.map((entry) => (entry.uid === item.uid ? { ...entry, multiple: multipleFor(spec, quantity) } : entry)),
+                          )
+                        }
+                      />
+                      <Button
+                        variant="quiet"
+                        aria-label={`Remove ${item.name}`}
+                        onClick={() => setStaged((list) => list.filter((entry) => entry.uid !== item.uid))}
+                      >
+                        Remove
+                      </Button>
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
-          </div>
+          </section>
         )}
 
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold">
@@ -196,7 +268,8 @@ export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; dat
                       perBase={food.nutrients}
                       defaultMultiple={lastMultiple(food.id)}
                       warnings={warningsFor(food.id, diet)}
-                      onAdd={(multiple) => add({ name: food.name, foodId: food.id, perServing: food.nutrients }, multiple)}
+                      actionLabel="Select"
+                      onAdd={(multiple) => stage({ name: food.name, foodId: food.id, perServing: food.nutrients }, multiple)}
                     />
                   ))}
                 </ul>
@@ -216,12 +289,16 @@ export function AddFoodPanel({ data, date, meal, today }: { data: SavedData; dat
               date={date}
               today={today}
               onAdd={(name, nutrients) => {
-                add({ name, perServing: nutrients }, 1);
+                stage({ name, perServing: nutrients }, 1);
                 setExtra(null);
               }}
             />
           </section>
         )}
+
+        <Button className="self-end" onClick={commit}>
+          {staged.length === 0 ? "Done" : `Add ${staged.length} ${staged.length === 1 ? "food" : "foods"} to ${mealName}`}
+        </Button>
     </div>
   );
 }

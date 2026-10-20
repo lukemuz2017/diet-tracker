@@ -37,6 +37,30 @@ export function addFood(
   return entry;
 }
 
+/** Adds several foods to one meal at once, with a single Undo for the lot. */
+export function addFoods(
+  items: { food: { name: string; foodId?: string; perServing: Nutrients }; servings: number }[],
+  date: string,
+  meal: Meal,
+  message: string,
+) {
+  const createdAt = new Date().toISOString();
+  const entries: Entry[] = items.map(({ food, servings }) => ({
+    id: newId(),
+    date,
+    meal,
+    name: food.name,
+    servings,
+    foodId: food.foodId,
+    nutrients: scaleNutrients(food.perServing, servings),
+    createdAt,
+  }));
+  updateData((data) => ({ ...data, entries: [...data.entries, ...entries] }));
+  showToast(message, () => {
+    for (const entry of entries) removeEntry(entry.id, { silent: true });
+  });
+}
+
 export function removeEntry(id: string, { silent = false } = {}) {
   let removed: Entry | undefined;
   updateData((data) => {

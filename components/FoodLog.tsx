@@ -59,10 +59,7 @@ export function FoodLog() {
               <DayPicker date={addDate} today={today} earliest={start} onPick={setAddDate} />
               <MealPicker value={addMeal} onChange={setAddMeal} />
             </div>
-            <AddFoodPanel key={addDate} data={data} date={addDate} meal={addMeal} today={today} />
-            <Button className="self-end" onClick={() => setAddDate(null)}>
-              Done
-            </Button>
+            <AddFoodPanel data={data} date={addDate} meal={addMeal} today={today} onDone={() => setAddDate(null)} />
           </>
         )}
       </Dialog>
