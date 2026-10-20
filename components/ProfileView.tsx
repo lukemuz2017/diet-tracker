@@ -33,6 +33,12 @@ export function ProfileView() {
         title="Your profile"
       />
       <div className="flex max-w-2xl flex-col gap-5">
+        {/* Right after setup, the next step comes first, not after the ranges. */}
+        {firstVisit && (
+          <ButtonLink href="/log" className="min-h-12 self-start px-7 text-[17px]">
+            Log your first food
+          </ButtonLink>
+        )}
         <MemberCard profile={profile} today={today} />
 
         <h2 className="-mb-2 mt-2 font-display text-2xl font-extrabold">Your daily ranges</h2>
@@ -69,9 +75,11 @@ export function ProfileView() {
           </Link>
         </p>
 
-        <ButtonLink href="/log" className="min-h-12 self-start px-7 text-[17px]">
-          {firstVisit ? "Log your first food" : "Back to your dashboard"}
-        </ButtonLink>
+        {!firstVisit && (
+          <ButtonLink href="/log" className="min-h-12 self-start px-7 text-[17px]">
+            Back to your dashboard
+          </ButtonLink>
+        )}
 
         <SampleData data={data} today={today} />
       </div>
