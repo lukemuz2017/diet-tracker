@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
-import { formatDay } from "@/lib/dates";
+import { formatDay, formatShortDay } from "@/lib/dates";
 import { formatValue, statusFor } from "@/lib/log";
 import { NUTRIENT_GROUPS, NUTRIENTS, type NutrientKey, type Nutrients } from "@/lib/nutrients";
 import { formatTarget, type Target, type Targets } from "@/lib/targets";
@@ -208,7 +208,7 @@ export function NutrientByDay({ summary, targets }: { summary: WindowSummary; ta
               const average = running[index];
               return (
                 <tr key={day.date}>
-                  <th scope="row" className="py-1.5 text-left font-bold">{formatDay(day.date)}</th>
+                  <th scope="row" className="py-1.5 text-left font-bold">{formatShortDay(day.date)}</th>
                   <td className="py-1.5 text-right tabular-nums">{value === undefined ? "–" : formatValue(value)}</td>
                   <td className="py-1.5 pl-4 text-right tabular-nums">{average === undefined ? "–" : formatValue(average)}</td>
                   <td className="py-1.5 pl-4 text-[13px]">
