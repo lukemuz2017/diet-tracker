@@ -87,8 +87,8 @@ export function CustomFoodForm({
         </summary>
         <div className="flex flex-col gap-5 pb-2 pt-3">{MORE_NUTRIENTS.map(field)}</div>
       </details>
-      <Button type="submit" className="self-start">
-        Add food
+      <Button type="submit" variant="secondary" className="self-start">
+        Add to list
       </Button>
     </form>
   );

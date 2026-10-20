@@ -78,7 +78,10 @@ export function FoodSearch({
     } else if (event.key === "Enter" && showList) {
       event.preventDefault();
       choose(active);
-    } else if (event.key === "Escape") {
+    } else if (event.key === "Escape" && showList) {
+      // Close just the suggestions, not the pop-up around the search.
+      event.preventDefault();
+      event.stopPropagation();
       setOpen(false);
     }
   }

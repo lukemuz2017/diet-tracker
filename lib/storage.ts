@@ -107,6 +107,40 @@ export function updateData(change: (data: SavedData) => SavedData): boolean {
   }
 }
 
+const TRAY_KEY = "diet-tracker:tray";
+
+/** Foods picked in Add food but not added yet. Kept for this tab only (sessionStorage). */
+export interface TrayItem {
+  uid: string;
+  name: string;
+  foodId?: string;
+  perServing: Nutrients;
+  /** Multiple of the food's base amount. */
+  multiple: number;
+}
+
+export function readTray(): TrayItem[] {
+  try {
+    const value = JSON.parse(window.sessionStorage.getItem(TRAY_KEY) ?? "[]");
+    if (!Array.isArray(value)) return [];
+    return value.filter(
+      (item) =>
+        item && typeof item.uid === "string" && typeof item.name === "string" && typeof item.multiple === "number" && typeof item.perServing === "object",
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function writeTray(items: TrayItem[]) {
+  try {
+    if (items.length) window.sessionStorage.setItem(TRAY_KEY, JSON.stringify(items));
+    else window.sessionStorage.removeItem(TRAY_KEY);
+  } catch {
+    // Storage blocked: the tray just won't outlive the page.
+  }
+}
+
 /** Whether this browser lets the app keep data (private windows may not). */
 export function canSave(): boolean {
   try {

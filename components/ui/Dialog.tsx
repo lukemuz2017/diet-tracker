@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { Toast } from "@/components/Toast";
+import { modalShown } from "@/lib/toast";
 
 // A modal built on the native <dialog>: showModal() traps focus, makes the
 // page behind inert, closes on Escape and returns focus when it closes. The
 // backdrop is blurred. "center" is a pop-up form; "right" is a slide-in panel.
+// While it's open, "Added … · Undo" messages show inside it (components/Toast.tsx).
 export function Dialog({
   open,
   onClose,
@@ -23,16 +26,38 @@ export function Dialog({
   // A backdrop tap closes only if it also started on the backdrop, so a tap that
   // slides onto it (the phone keyboard shifting the pop-up) doesn't close it.
   const pressedBackdrop = useRef(false);
+  // Whether this pop-up is counted as open (lib/toast.ts: modalShown).
+  const counted = useRef(false);
+  // Set when the pop-up closes itself on the way out (unmount, a hidden page, or
+  // React's double run in development), so that close isn't reported as the
+  // person closing it.
+  const closingQuietly = useRef(false);
+
+  function uncount() {
+    if (counted.current) {
+      counted.current = false;
+      modalShown(-1);
+    }
+  }
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
+    if (open && !counted.current) {
+      counted.current = true;
+      modalShown(1);
+    }
     if (!open && dialog.open) dialog.close();
+    if (!open) uncount();
     // Next keeps the page you left mounted but hidden, so close on the way out:
     // a modal left open stays in the top layer and blocks the next page.
     return () => {
-      if (dialog.open) dialog.close();
+      if (dialog.open) {
+        closingQuietly.current = true;
+        dialog.close();
+      }
+      uncount();
     };
   }, [open]);
 
@@ -45,7 +70,15 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onClose={() => {
+        // A quiet close was already uncounted, and the pop-up may be open again.
+        if (closingQuietly.current) {
+          closingQuietly.current = false;
+          return;
+        }
+        uncount();
+        onClose();
+      }}
       onPointerDown={(event) => {
         pressedBackdrop.current = event.target === ref.current;
       }}
@@ -72,6 +105,7 @@ export function Dialog({
             </button>
           </div>
           {children}
+          <Toast inDialog />
         </div>
       )}
     </dialog>

@@ -10,7 +10,7 @@ export default function LogPage() {
   return (
     <>
       <RequireProfile />
-      {/* FoodLog reads ?tab=, which needs a Suspense boundary. */}
+      {/* FoodLog reads ?add=, which needs a Suspense boundary. */}
       <Suspense fallback={<PageHeader title="Dashboard" />}>
         <FoodLog />
       </Suspense>

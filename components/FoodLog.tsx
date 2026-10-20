@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import { AddFoodPanel } from "@/components/AddFood";
 import { AmountSelect } from "@/components/FoodRow";
 import { WeekCalendar } from "@/components/WeekCalendar";
@@ -19,22 +20,41 @@ import { dayHighlights } from "@/lib/highlights";
 import { formatValue, totalsFor } from "@/lib/log";
 import { MEALS, byMeal, mealAt, type Meal } from "@/lib/meals";
 import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
-import { useSavedData, type Entry, type SavedData } from "@/lib/storage";
+import { readTray, useSavedData, writeTray, type Entry, type SavedData, type TrayItem } from "@/lib/storage";
 import { computeTargets } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
-import { WINDOW_DAYS, currentWindowEnd, dayState, summarizeWindow, type DayState } from "@/lib/week";
+import { WINDOW_DAYS, currentWindowEnd, dayState, type DayState } from "@/lib/week";
 
 // Dashboard, one page: a summary, a Today strip (where you log and mark the
 // day complete), and the week ribbons (each nutrient, each day, and the
-// average that counts). "+ Add food" opens a pop-up form; clicking a day
-// opens that day in a side panel.
+// average that counts). "+ Add food" opens a pop-up form (also opened by
+// /log?add=1, e.g. "Log your first food"); clicking a day opens that day in a
+// side panel. Foods picked in Add food but not added yet live here, saved for
+// the tab, so closing the pop-up or visiting New recipe keeps them.
 export function FoodLog() {
   const data = useSavedData();
   const today = useToday();
+  const router = useRouter();
+  const requested = useSearchParams().get("add") === "1";
+  const [autoOpen, setAutoOpen] = useState(requested);
   const [addDate, setAddDate] = useState<string | null>(null);
-  const [addMeal, setAddMeal] = useState<Meal>("breakfast");
+  // The time of day picks the meal; only read in the browser.
+  const [addMeal, setAddMeal] = useState<Meal>(() => (typeof window === "undefined" ? "breakfast" : mealAt(new Date())));
   const [openDay, setOpenDay] = useState<string | null>(null);
+  const [staged, setStaged] = useState<TrayItem[]>(() => readTray());
+  useEffect(() => writeTray(staged), [staged]);
   if (!data?.profile || !today) return <PageHeader title="Dashboard" />;
+
+  // The day Add food is open for, if it's open.
+  const openDate = addDate ?? (autoOpen ? today : null);
+  function closeAdd() {
+    setAddDate(null);
+    if (autoOpen) {
+      setAutoOpen(false);
+      router.replace("/log", { scroll: false });
+    }
+  }
+  const addLabel = staged.length ? `Add food · ${staged.length} picked` : "Add food";
 
   // The 7 days that count: ending yesterday until today is marked complete.
   const end = currentWindowEnd(data.completeDays, today);
@@ -42,7 +62,6 @@ export function FoodLog() {
   const firstFood = data.entries.length === 1;
   // Nothing logged yet: one clear prompt instead of an empty grid.
   const nothingYet = data.entries.length === 0;
-  const targets = computeTargets(data.profile, today);
 
   // Opened from a meal's "+ Add", that meal; otherwise a guess from the time of day.
   function openAdd(date: string, meal: Meal = mealAt(new Date())) {
@@ -65,25 +84,33 @@ export function FoodLog() {
             className="inline-flex min-h-14 items-center gap-2 rounded-full bg-leaf px-8 font-display text-xl font-extrabold text-white hover:bg-leaf-dark"
           >
             <PlusIcon width={22} height={22} strokeWidth={2.25} />
-            Add food
+            {addLabel}
           </button>
         </section>
       ) : (
         <>
-          <DashboardStickers summary={summarizeWindow(data, end, targets)} />
+          <DashboardStickers />
           <WeekSummary data={data} profile={data.profile} today={today} end={end} range={`${formatDay(start)} – ${formatDay(end)}`} />
-          <TodayStrip data={data} today={today} onAdd={() => openAdd(today)} onOpen={() => setOpenDay(today)} />
+          <TodayStrip data={data} today={today} addLabel={addLabel} onAdd={() => openAdd(today)} onOpen={() => setOpenDay(today)} />
         </>
       )}
 
-      <Dialog open={addDate !== null} onClose={() => setAddDate(null)} title="Add food">
-        {addDate && (
+      <Dialog open={openDate !== null} onClose={closeAdd} title="Add food">
+        {openDate && (
           <>
             <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
-              <DayPicker date={addDate} today={today} earliest={start} onPick={setAddDate} />
+              <DayPicker date={openDate} today={today} earliest={start} onPick={setAddDate} />
               <MealPicker value={addMeal} onChange={setAddMeal} />
             </div>
-            <AddFoodPanel data={data} date={addDate} meal={addMeal} today={today} onDone={() => setAddDate(null)} />
+            <AddFoodPanel
+              data={data}
+              date={openDate}
+              meal={addMeal}
+              today={today}
+              staged={staged}
+              setStaged={setStaged}
+              onDone={closeAdd}
+            />
           </>
         )}
       </Dialog>
@@ -111,6 +138,7 @@ export function FoodLog() {
 function DayPicker({ date, today, earliest, onPick }: { date: string; today: string; earliest: string; onPick: (date: string) => void }) {
   const [open, setOpen] = useState(false);
   const calendarId = useId();
+  const button = useRef<HTMLButtonElement>(null);
   return (
     <div
       className="flex flex-col gap-2"
@@ -125,6 +153,7 @@ function DayPicker({ date, today, earliest, onPick }: { date: string; today: str
     >
       <span className="text-[15px] font-bold">Day</span>
       <button
+        ref={button}
         type="button"
         aria-expanded={open}
         aria-controls={calendarId}
@@ -149,6 +178,7 @@ function DayPicker({ date, today, earliest, onPick }: { date: string; today: str
             onPick={(picked) => {
               onPick(picked);
               setOpen(false);
+              requestAnimationFrame(() => button.current?.focus());
             }}
           />
         </div>
@@ -161,7 +191,19 @@ function DayPicker({ date, today, earliest, onPick }: { date: string; today: str
  * Today, above the week: calories so far, status, Add food and Mark complete.
  * Today isn't in the ribbons until it's complete, so this is where it lives.
  */
-function TodayStrip({ data, today, onAdd, onOpen }: { data: SavedData; today: string; onAdd: () => void; onOpen: () => void }) {
+function TodayStrip({
+  data,
+  today,
+  addLabel,
+  onAdd,
+  onOpen,
+}: {
+  data: SavedData;
+  today: string;
+  addLabel: string;
+  onAdd: () => void;
+  onOpen: () => void;
+}) {
   const { totals, foods } = totalsFor(data.entries.filter((entry) => entry.date === today));
   const marked = data.completeDays.includes(today);
   const chip = STATE_CHIP[dayState(foods, marked)];
@@ -199,7 +241,7 @@ function TodayStrip({ data, today, onAdd, onOpen }: { data: SavedData; today: st
           className="inline-flex min-h-12 items-center gap-2 rounded-full bg-leaf px-6 font-display text-[17px] font-extrabold text-white hover:bg-leaf-dark"
         >
           <PlusIcon width={20} height={20} strokeWidth={2.25} />
-          Add food
+          {addLabel}
         </button>
       </div>
     </section>
@@ -425,6 +467,15 @@ function MealPicker({ value, onChange }: { value: Meal; onChange: (meal: Meal) =
   );
 }
 
+/** Removes a food and puts focus on the next one, or the meal's "+ Add" if it was the last. */
+function removeAndRefocus(event: MouseEvent<HTMLButtonElement>, id: string) {
+  const row = event.currentTarget.closest("li");
+  const meal = row?.closest("section");
+  const sibling = (row?.nextElementSibling ?? row?.previousElementSibling)?.querySelector<HTMLButtonElement>('button[aria-label^="Remove"]');
+  removeEntry(id);
+  requestAnimationFrame(() => (sibling ?? meal?.querySelector<HTMLButtonElement>('button[aria-label^="Add food to"]'))?.focus());
+}
+
 function FoodList({ entries }: { entries: Entry[] }) {
   return (
     <ul className="divide-y divide-line">
@@ -446,7 +497,7 @@ function FoodList({ entries }: { entries: Entry[] }) {
                 quantity={quantityFor(spec, entry.servings)}
                 onChange={(quantity) => changeServings(entry.id, multipleFor(spec, quantity))}
               />
-              <Button variant="quiet" onClick={() => removeEntry(entry.id)} aria-label={`Remove ${entry.name}`}>
+              <Button variant="quiet" onClick={(event) => removeAndRefocus(event, entry.id)} aria-label={`Remove ${entry.name}`}>
                 Remove
               </Button>
             </span>
