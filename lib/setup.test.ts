@@ -51,7 +51,7 @@ test("height limits include exactly 4 ft and 7 ft 6 in", () => {
 });
 
 test("date of birth must be a real date in the past", () => {
-  assert.equal(birthError("", "", ""), "Enter your date of birth, like 03 14 1992.");
+  assert.equal(birthError("", "", ""), "Choose your date of birth.");
   assert.equal(birthError("02", "30", "1990"), "Enter a real date, like 03 14 1992.");
   assert.equal(birthError("13", "01", "1990"), "Enter a month between 1 and 12.");
   assert.equal(birthError("03", "14", "92"), "Enter the year with four digits, like 1992.");

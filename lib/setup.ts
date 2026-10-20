@@ -68,7 +68,7 @@ const DATE_EXAMPLE = "like 03 14 1992";
 /** Reads month, day and year into "YYYY-MM-DD", checking the age is 18–100 on `today`. */
 function readBirthDate(values: SetupValues, today: string): { date?: string; error?: string } {
   const fields = [values.birthMonth, values.birthDay, values.birthYear].map((text) => text.trim());
-  if (fields.every((text) => text === "")) return { error: `Enter your date of birth, ${DATE_EXAMPLE}.` };
+  if (fields.every((text) => text === "")) return { error: "Choose your date of birth." };
   if (!fields.every((text) => /^\d+$/.test(text))) {
     return { error: `Enter your date of birth as numbers for month, day and year, ${DATE_EXAMPLE}.` };
   }

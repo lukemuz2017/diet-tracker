@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { WeekCalendar } from "@/components/WeekCalendar";
 import { PageHeader } from "@/components/ui/Card";
 import { CheckboxPills, ChoiceField, FieldError, TextField } from "@/components/ui/Field";
 import {
@@ -38,17 +39,94 @@ export function SetupScreen() {
 
 const WHY = "Used only to estimate your needs. Stays on this device.";
 
-function describedBy(...ids: (string | false | undefined)[]) {
-  return ids.filter(Boolean).join(" ") || undefined;
-}
-
 /** Where focus goes when a field has an error, in form order. */
 function firstErrorTarget(field: SetupField, values: SetupValues) {
   if (field === "height") return values.units === "us" ? "setup-height-ft" : "setup-height-cm";
-  if (field === "birthDate") return "setup-birth-month";
+  if (field === "birthDate") return "setup-birth-button";
   if (field === "sex") return `sex-${values.sex ?? "female"}`;
   if (field === "activity") return `activity-${values.activity ?? "sedentary"}`;
   return `setup-${field}`;
+}
+
+/** The picked date as "YYYY-MM-DD", or null while the three parts aren't a number each. */
+function pickedBirthDate(values: SetupValues): string | null {
+  const { birthYear: y, birthMonth: m, birthDay: d } = values;
+  if (!/^\d{4}$/.test(y) || !/^\d{1,2}$/.test(m) || !/^\d{1,2}$/.test(d)) return null;
+  return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
+
+/**
+ * Date of birth: a button showing the date that drops down a calendar, with
+ * month and year menus so there's no clicking back through decades.
+ */
+function BirthDateField({
+  values,
+  set,
+  today,
+  error,
+}: {
+  values: SetupValues;
+  set: (patch: Partial<SetupValues>) => void;
+  today: string;
+  error?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const calendarId = useId();
+  const picked = pickedBirthDate(values);
+  const thisYear = Number(today.slice(0, 4));
+  // With nothing picked yet, the calendar opens on a typical adult's birth year.
+  const start = picked ?? `${thisYear - 30}-${today.slice(5, 7)}-01`;
+  const label = picked
+    ? new Date(`${picked}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+    : "Select your date of birth";
+
+  return (
+    <fieldset
+      className="flex flex-col gap-1.5"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && open) {
+          event.preventDefault();
+          setOpen(false);
+        }
+      }}
+    >
+      <legend className="pb-1.5 text-[15px] font-bold">Date of birth</legend>
+      <button
+        id="setup-birth-button"
+        type="button"
+        aria-expanded={open}
+        aria-controls={calendarId}
+        aria-describedby={error ? "setup-birth-error" : undefined}
+        onClick={() => setOpen((value) => !value)}
+        className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-field bg-white px-3.5 text-left text-base ${
+          error ? "border-2 border-tomato" : "border-[1.5px] border-field"
+        }`}
+      >
+        <span className={picked ? "" : "text-muted"}>{label}</span>
+        <span aria-hidden="true" className={`text-muted transition-transform ${open ? "rotate-180" : ""}`}>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div id={calendarId} className="w-full rounded-card border-[1.5px] border-line shadow-sm">
+          <WeekCalendar
+            end={start}
+            selected={picked}
+            min={`${thisYear - 100}-01-01`}
+            max={today}
+            week={false}
+            jump
+            onPick={(date) => {
+              const [year, month, day] = date.split("-");
+              set({ birthYear: year, birthMonth: month, birthDay: day });
+              setOpen(false);
+            }}
+          />
+        </div>
+      )}
+      {error && <FieldError id="setup-birth-error">{error}</FieldError>}
+    </fieldset>
+  );
 }
 
 export function SetupForm({ saved, today }: { saved: Profile | null; today: string }) {
@@ -147,48 +225,7 @@ export function SetupForm({ saved, today }: { saved: Profile | null; today: stri
         error={shown.weight}
       />
 
-      <fieldset className="flex flex-col gap-1.5">
-        <legend className="pb-1.5 text-[15px] font-bold">Date of birth</legend>
-        <p id="setup-birth-hint" className="-mt-1.5 text-[13px] text-muted">
-          For example, 03 14 1992. Used only to work out your age.
-        </p>
-        <div className="grid grid-cols-[1fr_1fr_1.6fr] gap-3">
-          <TextField
-            id="setup-birth-month"
-            label="Month"
-            inputMode="numeric"
-            autoComplete="bday-month"
-            maxLength={2}
-            value={values.birthMonth}
-            onChange={(event) => set({ birthMonth: event.target.value })}
-            invalid={Boolean(shown.birthDate)}
-            aria-describedby={describedBy("setup-birth-hint", shown.birthDate && "setup-birth-error")}
-          />
-          <TextField
-            id="setup-birth-day"
-            label="Day"
-            inputMode="numeric"
-            autoComplete="bday-day"
-            maxLength={2}
-            value={values.birthDay}
-            onChange={(event) => set({ birthDay: event.target.value })}
-            invalid={Boolean(shown.birthDate)}
-            aria-describedby={describedBy("setup-birth-hint", shown.birthDate && "setup-birth-error")}
-          />
-          <TextField
-            id="setup-birth-year"
-            label="Year"
-            inputMode="numeric"
-            autoComplete="bday-year"
-            maxLength={4}
-            value={values.birthYear}
-            onChange={(event) => set({ birthYear: event.target.value })}
-            invalid={Boolean(shown.birthDate)}
-            aria-describedby={describedBy("setup-birth-hint", shown.birthDate && "setup-birth-error")}
-          />
-        </div>
-        {shown.birthDate && <FieldError id="setup-birth-error">{shown.birthDate}</FieldError>}
-      </fieldset>
+      <BirthDateField values={values} set={set} today={today} error={shown.birthDate} />
 
       <ChoiceField
         name="sex"
