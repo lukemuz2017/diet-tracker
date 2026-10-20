@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { NutrientBar } from "@/components/NutrientBar";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { DayBadge } from "@/components/WindowView";
@@ -19,15 +19,22 @@ const CELL: Record<string, string> = {
   unknown: "bg-track",
 };
 const COUNTED: DayState[] = ["complete"];
-const GRID = "grid grid-cols-[8.5rem_repeat(7,minmax(2.25rem,1fr))_9.5rem] items-center gap-x-1.5";
+// Narrower name and average columns on phones, so more days fit.
+const GRID =
+  "grid grid-cols-[6.5rem_repeat(7,minmax(2.25rem,1fr))_6.5rem] items-center gap-x-1.5 sm:grid-cols-[8.5rem_repeat(7,minmax(2.25rem,1fr))_9.5rem]";
+// The name column stays put while the days scroll sideways on a phone.
+const PINNED = "sticky left-0 z-[1] self-stretch bg-paper";
 // The summary column says only where the average stands; the amounts and how
 // far to go are in the nutrient's detail.
 const SUMMARY: Record<string, string> = { "to-go": "Under", "in-range": "In range", over: "Over" };
 
 /**
  * Week ribbons: one row per nutrient, a cell per day (in range / under / over
- * / not logged) and the average that counts. Clicking a day opens that
- * day; clicking a nutrient expands its weekly detail.
+ * / not logged; brown-bag kraft when logged but not marked complete) and the
+ * average that counts. Clicking a day opens that day; clicking a nutrient
+ * expands its weekly detail. On a phone the grid scrolls sideways: it opens
+ * scrolled to the newest days, the names stay pinned, and the detail stays the
+ * width of the screen.
  */
 export function WeekRibbons({
   data,
@@ -44,6 +51,17 @@ export function WeekRibbons({
   onOpenDay: (date: string) => void;
 }) {
   const [expanded, setExpanded] = useState<NutrientKey | null>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const [visibleWidth, setVisibleWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const element = scroller.current;
+    if (!element) return;
+    // Start at the newest days and the averages.
+    element.scrollLeft = element.scrollWidth;
+    const observer = new ResizeObserver(() => setVisibleWidth(element.clientWidth));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   const targets = computeTargets(profile, today);
   const summary = summarizeWindow(data, end, targets);
   const dayLabel = (date: string) => (date === today ? "Today" : formatDay(date).slice(0, 3));
@@ -57,11 +75,11 @@ export function WeekRibbons({
 
   return (
     <div className="rounded-card bg-paper p-4 sm:p-5">
-      <div className="overflow-x-auto">
-        <div className="min-w-[40rem]">
+      <div ref={scroller} className="overflow-x-auto">
+        <div className="min-w-[33rem] sm:min-w-[40rem]">
           {/* Column headers: each day's badge opens that day. */}
           <div className={`${GRID} pb-2`}>
-            <span className="text-xs text-muted">Tap a day or a nutrient</span>
+            <span className={`${PINNED} flex items-center pr-2 text-xs text-muted`}>Pick a day or a nutrient</span>
             {summary.days.map((day, index) => (
               <button
                 key={day.date}
@@ -93,7 +111,7 @@ export function WeekRibbons({
                     type="button"
                     aria-expanded={open}
                     onClick={() => setExpanded(open ? null : key)}
-                    className="flex min-h-8 items-center gap-1.5 rounded-lg pr-2 text-left text-sm font-bold hover:text-leaf"
+                    className={`${PINNED} flex min-h-8 items-center gap-1.5 rounded-lg pr-2 text-left text-sm font-bold hover:text-leaf`}
                   >
                     <span aria-hidden="true" className={`text-xs text-muted transition-transform ${open ? "rotate-90" : ""}`}>
                       ▸
@@ -103,8 +121,13 @@ export function WeekRibbons({
                   {summary.days.map((day) => {
                     const value = day.totals[key];
                     const dayStatus = statusFor(key, targets[key], value);
+                    const pending = day.foods > 0 && !COUNTED.includes(day.state);
                     const words =
-                      day.foods === 0 ? "not logged" : value === undefined ? "no value" : `${formatValue(value)} ${unit}, ${dayStatus.text.toLowerCase()}`;
+                      day.foods === 0
+                        ? "not logged"
+                        : value === undefined
+                          ? "no value"
+                          : `${formatValue(value)} ${unit}, ${dayStatus.text.toLowerCase()}${pending ? ", not marked complete" : ""}`;
                     return (
                       <button
                         key={day.date}
@@ -113,8 +136,8 @@ export function WeekRibbons({
                         aria-label={`${label}, ${dayName(day.date)}: ${words}`}
                         title={`${dayName(day.date)}: ${words}`}
                         className={`h-6 rounded-md ${
-                          day.foods === 0 ? "border-[1.5px] border-dashed border-field" : CELL[dayStatus.kind]
-                        } ${day.foods > 0 && !COUNTED.includes(day.state) ? "opacity-55" : ""}`}
+                          day.foods === 0 ? "border-[1.5px] border-dashed border-field" : pending ? "bg-kraft" : CELL[dayStatus.kind]
+                        }`}
                       />
                     );
                   })}
@@ -134,7 +157,12 @@ export function WeekRibbons({
                     )}
                   </span>
                 </div>
-                {open && <NutrientDetail data={data} nutrientKey={key} summary={summary} targets={targets} dayName={dayName} />}
+                {open && (
+                  // Pinned and screen-wide, so the detail doesn't scroll sideways with the days.
+                  <div className="sticky left-0" style={visibleWidth ? { width: visibleWidth } : undefined}>
+                    <NutrientDetail data={data} nutrientKey={key} summary={summary} targets={targets} dayName={dayName} />
+                  </div>
+                )}
               </Fragment>
             );
           })}
@@ -146,7 +174,7 @@ export function WeekRibbons({
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-lemon align-[-2px]" />Under</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-carrot align-[-2px]" />Over</span>
         <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border-[1.5px] border-dashed border-field align-[-2px]" />Not logged</span>
-        <span>Faded: not marked complete</span>
+        <span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm bg-kraft align-[-2px]" />Not marked complete</span>
       </div>
     </div>
   );
@@ -191,7 +219,7 @@ function NutrientDetail({
         <thead>
           <tr className="text-left text-xs font-bold uppercase tracking-[0.08em] text-leaf">
             <th scope="col" className="pb-1 font-bold">Each day</th>
-            <th scope="col" className="pb-1 text-right font-bold">{label}</th>
+            <th scope="col" className="pb-1 pl-3 text-right font-bold">{label}</th>
             <th scope="col" className="pb-1 pl-6 font-bold">Top source</th>
           </tr>
         </thead>
@@ -207,7 +235,7 @@ function NutrientDetail({
                   {dayName(day.date)}
                   {!counts && <span className="sr-only"> (not counted)</span>}
                 </th>
-                <td className="py-1 text-right tabular-nums">
+                <td className="py-1 pl-3 text-right tabular-nums">
                   {day.foods === 0 ? "not logged" : value === undefined ? "no value" : `${formatValue(value)} ${unit}`}
                 </td>
                 <td className="py-1 pl-6">
@@ -227,7 +255,7 @@ function NutrientDetail({
         <tfoot>
           <tr className="border-t border-line">
             <th scope="row" className="pt-2 text-left font-bold">Average</th>
-            <td className="pt-2 text-right font-bold tabular-nums">
+            <td className="pt-2 pl-3 text-right font-bold tabular-nums">
               {summary.averages[nutrientKey] === undefined ? "–" : `${formatValue(summary.averages[nutrientKey]!)} ${unit}`}
             </td>
             <td className="pt-2 pl-6 text-[13px] text-muted">
