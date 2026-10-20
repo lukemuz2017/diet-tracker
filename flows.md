@@ -4,7 +4,7 @@ The tool is built around three flows: the **first visit**, the **main task** (lo
 
 ## Main task, as one sentence
 
-> I log what I ate today → I see where each nutrient stands today and over my last 7 days → I come back tomorrow, and it tells me what to eat more or less of.
+> I log what I ate today → it joins my last 7 days once I mark the day complete → I come back tomorrow, and the Dashboard shows what's going well and what to eat more of.
 
 ## Diagram
 
@@ -12,33 +12,34 @@ The tool is built around three flows: the **first visit**, the **main task** (lo
 flowchart LR
   subgraph FV["1 · First visit"]
     direction TB
-    A(["Open app, nothing saved"]) --> B["Welcome · /<br/>what it does · Get started"]
-    B --> C["Your details · /setup<br/>units, height, weight, age, sex, activity<br/>'why we ask' hints"]
+    A(["Open app, nothing saved"]) --> B["Welcome · /<br/>what it's for · Get started"]
+    B --> C["Your details · /setup<br/>height, weight, date of birth, sex, activity<br/>optional diet notes"]
     C -- "missing or out-of-range value:<br/>error by the field, input kept" --> C
-    C --> D["Your profile · /profile<br/>details + ranges, ⓘ explains each"]
-    D --> E["First log · /log<br/>one tap on a common food"]
+    C --> D["Your profile · /profile<br/>your ranges, ⓘ explains each<br/>Log your first food"]
+    D --> E["Add food pop-up · /log<br/>search or browse · pick foods · add"]
   end
 
   subgraph MT["2 · Main task: log food"]
     direction TB
-    T["Today · /today<br/>today's bars · grams to go"] --> L["Add food · /log<br/>common · recent · custom<br/>date defaults to today"]
-    L -- "error by the field, input kept" --> L
-    L -- "saved" --> T2["Today · /today<br/>bars update · 'Added oatmeal' · Undo"]
-    T2 -- "edit or delete, with Undo" --> T2
-    T2 -- "done eating for the day" --> K["Mark day complete<br/>today joins the 7-day numbers"]
+    T["Dashboard · /log<br/>Today row · + Add food"] --> L["Add food pop-up<br/>day · meal · search<br/>picked foods in a To add list"]
+    L -- "own food: error by the field, input kept" --> L
+    L -- "Add 3 foods to lunch · Undo<br/>stays open for the next meal" --> L
+    L -- "Mark complete" --> K["Day complete<br/>joins the 7-day average"]
+    K --> T
   end
 
   subgraph CB["3 · Coming back"]
     direction TB
-    R(["Return visit"]) --> W["Today · /today<br/>Welcome back · 5 of last 7 days logged"]
-    W -- "a day was missed" --> M["Missed-day nudge<br/>opens Add food for that date"]
-    W -- "a logged day isn't marked" --> I["Not complete<br/>doesn't count until you mark it"]
-    W --> V["Last 7 days · /week<br/>7-day averages vs. targets<br/>suggestions with a one-tap fix"]
+    R(["Return visit"]) --> W["Dashboard · /log<br/>Going well · Could improve · Bigger picture"]
+    W --> G["Week grid<br/>a cell per nutrient per day<br/>brown = not marked complete"]
+    G -- "pick a day" --> P["Day panel<br/>meals · fix amounts · Mark complete"]
+    G -- "pick a nutrient" --> N["Nutrient detail<br/>each day and its top source"]
+    W --> H["History · /history<br/>earlier weeks · chart with running average"]
   end
 
-  FV -- "'First food logged'" --> MT
+  E -- "'First food logged'" --> MT
   MT -- "the next day" --> CB
-  CB -- "nudge or one-tap fix<br/>opens Add food" --> MT
+  P -- "+ Add for a meal" --> L
 ```
 
 ## Routes
@@ -59,36 +60,34 @@ Shared navigation, shown once setup is done: **Dashboard · History · Profile �
 
 ## How the 7-day window works
 
-- **The 7-day average is what counts; daily ranges are a guide.** Each nutrient is judged on its average over the last 7 days: the 7 days ending yesterday, until you mark today complete, then the 7 days ending today. An unfinished today never shortens the week. Going out of range on a single day is normal and isn't treated as a miss.
-- **Only days you mark complete count.** A day is either complete (you tapped "Mark complete") or not complete; nothing is marked for you, past days included. The average divides by the number of complete days.
-  - **Not complete** days (food logged, not marked) show as kraft cells on the Dashboard (faded on History) and stay out of the averages until you mark them, so a half-logged day never drags the numbers down.
+- **The 7-day average is what counts; daily numbers are a guide.** Each nutrient is judged on its average over the last 7 days: the 7 days ending yesterday, until you mark today complete, then the 7 days ending today. An unfinished today never shortens the week. Going out of range on a single day is normal and isn't treated as a miss.
+- **Only days you mark complete count.** A day is either complete (you tapped "Mark complete", in the Today row, a day's panel or the Add food pop-up) or not; nothing is marked for you. The average divides by the number of complete days, and the ⓘ next to the grid's Average header says how many count.
+  - **Not complete** days (food logged, not marked) are brown-bag kraft cells on the Dashboard (faded on History) and stay out of the averages, so a half-logged day never drags the numbers down.
   - **Unlogged days** are gaps, not zeros.
-- **Suggestions refresh daily.** They're calculated from complete days only, so they change at most once a day, never while you're logging.
-- **Weekend vs. weekday trend** looks back 14 days, because 7 days only has 2 weekend days. It needs at least 3 complete weekend days and 5 complete weekdays, and only shows a difference of 20% or more.
-- **Days logged** counts how many of the last 7 days have entries ("5 of last 7 days logged"). Unlike a streak, it can't reset to zero.
+- **Suggestions refresh daily**, from complete days only, so they never change while you're logging.
 
 ### The first week, in stages
 
 | When | What appears |
 |---|---|
-| Day 1, before marking it complete | Today's bars. The 7-day card says "Your 7-day balance starts when you finish your first day" and offers "Mark day complete" |
-| 1–2 complete days | 7-day averages, labeled "based on N days". "Suggestions start after 3 days" |
-| 3+ complete days | Suggestions with a one-tap fix, refreshed daily |
-| Day 7 | A full 7-day window and a "Your first week" message |
-| Around day 8–14 | The weekend vs. weekday trend, once there's enough data |
+| Nothing logged yet | The Dashboard is one prompt, "Log what you ate today to start your week.", with a large Add food |
+| Food logged, no day complete | The summary says to mark a day complete; the Today row has Mark complete |
+| 1–2 complete days | Averages of the days so far; "Suggestions start after 3 complete days… 2 to go." |
+| 3+ complete days | Three tiles: Going well, Could improve (a food-group suggestion with foods in bold) and Bigger picture (a habit) |
+| 7 complete days | A full week |
 
 ## States and errors
 
-- **Nothing logged yet today:** quick-add foods and a "Log your first meal" action, never a blank page.
-- **First food logged:** an inline "First food logged" message on Today, no pop-up.
-- **Missed day:** on return, "You didn't log Thursday. Add it?" opens `/log` with that date.
-- **Not complete:** a logged day you haven't marked shows "Not complete" with a Mark complete button, and is left out of the averages until you mark it.
+- **Nothing logged yet:** one prompt with Add food, never an empty grid.
+- **First food logged:** an inline "First food logged" note that says to mark the day complete.
+- **Not complete:** brown cells and a "Not complete" chip; left out of the averages until marked.
+- **Leaving Add food:** picked foods stay in the "To add" list (saved for the tab), so Escape, Close or visiting New recipe never loses them.
 - **Details changed:** a new weight or activity level recalculates the ranges.
-- **Sample data:** "Load a sample 2 weeks" on `/profile` asks you to confirm on the page, then fills the 15 days before today with example meals from the built-in foods, with portions scaled to your maintenance calories (weekends run salty; one weekday is half-logged, so it reads as incomplete). Days you already logged and today are left alone. Sample entries are marked (`lib/sample.ts`), so "Clear sample data" removes only them. This exists so the week views, trends and suggestions can be shown in class.
+- **Sample data:** "Load a sample 2 weeks" on `/profile` asks you to confirm on the page, then fills the 15 days before today with example meals from the built-in foods, scaled to your maintenance calories; all but one "busy day" are marked complete. Days you already logged and today are left alone, and "Clear sample data" removes only the samples (`lib/sample.ts`). It exists so graders and classmates can see the Dashboard, suggestions and History as they look after weeks of use, without entering dozens of foods.
 - **Can't save:** if the browser blocks storage (e.g. private browsing), a banner says your data won't be kept.
-- **Setup errors:** next to the field and say what to do, e.g. "Enter a height between 4 ft and 7 ft 6 in". What you typed stays.
-- **Log errors:** food name missing, calories missing, a negative number, or a date in the future. What you typed stays.
-- **Delete:** an Undo message right after.
+- **Setup errors:** next to the field and say what to do, e.g. "Enter a height between 4 ft and 7 ft 6 in" or "Enter your date of birth as month/day/year, like 02/19/1995." What you typed stays.
+- **Your own food:** name and calories are required, and numbers can't be negative; errors sit by the field and keep what you typed.
+- **Remove:** an Undo message right after, shown inside the pop-up or panel you're in.
 
 ## What's tracked
 

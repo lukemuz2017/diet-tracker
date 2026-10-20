@@ -17,10 +17,10 @@ Context for any coding agent working in this repo. Read it before doing anything
 A diet tracking and planning tool for keeping a **balanced diet**. It is not a weight-loss app: targets are set to *maintain* current weight.
 
 1. **Set up once.** The person enters a few facts about themselves (height, weight, age, sex, activity level). The app estimates maintenance calories and sets target ranges for each tracked nutrient.
-2. **Log food.** They log what they eat each day, or catch up on earlier days. Today shows where every nutrient stands against its daily range: under, in range, or over.
-3. **Check the last 7 days.** Every nutrient is judged on its rolling 7-day average. The app shows days in range and suggests one to three things to focus on, each with a one-tap fix (e.g. "Potassium averaged 60% of target → Add a banana").
+2. **Log food.** They log what they eat each day (or catch up on earlier days of the week) and mark the day complete.
+3. **Check the last 7 days.** Every nutrient is judged on its average over the complete days in the last 7. The Dashboard shows what's going well, what could improve (with a food-group suggestion) and a bigger-picture habit.
 
-Working name: TBD. Repo folder: `health-tracker`.
+Name: Diet Tracker. Repo folder: `health-tracker`.
 
 ## Project files
 
@@ -152,4 +152,5 @@ Targets are estimates for maintaining weight, not medical advice. Say so once in
 - 2026-10-20 (student): how many days the average rests on ("N of 7 days count so far", and why) is behind an ⓘ next to the ribbons' Average header, not a "Based on" line in the summary card. `InfoButton` has `align="end"` for buttons near the right edge.
 - 2026-10-20 (student): the Dashboard summary shows just the title and short dates ("Oct 13 – Oct 19", `formatShortDay`) beside the tiles; no verdict line ("Mostly balanced." / "A few things to work on.").
 - 2026-10-20 (student): on phones (below sm) the week grid shows 3 days at a time with ‹ › arrows (opens on the newest; `PHONE_DAYS` in `components/WeekRibbons.tsx`) instead of scrolling sideways; sm and up show all 7. The nutrient detail table's first column is "Day" with dates as "Oct 13".
-- Next: the weekend vs. weekday trend, a mobile layout pass, then deploy to Vercel and run the first-run check.
+- 2026-10-20: README and flows.md brought up to date (diagram, first-week stages, states), `user-flows.pdf` regenerated, the first-run check written up in README, and a one-page process write-up added (`docs/`). The weekend vs. weekday trend was dropped for time.
+- Next: confirm the Vercel deploy and add its URL to README.
