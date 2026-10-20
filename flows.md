@@ -58,7 +58,7 @@ Shared navigation, shown once setup is done: **This week · History · Targets**
 
 ## How the 7-day window works
 
-- **The 7-day average is what counts; daily ranges are a guide.** Each nutrient is judged on its average over today and the 6 days before. Going out of range on a single day is normal and isn't treated as a miss.
+- **The 7-day average is what counts; daily ranges are a guide.** Each nutrient is judged on its average over the last 7 days: the 7 days ending yesterday, until you mark today complete, then the 7 days ending today. An unfinished today never shortens the week. Going out of range on a single day is normal and isn't treated as a miss.
 - **Only days you mark complete count.** A day is either complete (you tapped "Mark complete") or not complete; nothing is marked for you, past days included. The average divides by the number of complete days.
   - **Not complete** days (food logged, not marked) show faded and stay out of the averages until you mark them, so a half-logged day never drags the numbers down.
   - **Unlogged days** are gaps, not zeros.

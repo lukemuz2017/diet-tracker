@@ -6,6 +6,7 @@ import { WindowView } from "@/components/WindowView";
 import { PageHeader } from "@/components/ui/Card";
 import { useSavedData } from "@/lib/storage";
 import { useToday } from "@/lib/useToday";
+import { currentWindowEnd } from "@/lib/week";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -20,7 +21,7 @@ export function History() {
   );
   if (!data?.profile || !today) return header;
 
-  const end = requested && ISO_DATE.test(requested) && requested <= today ? requested : today;
+  const end = requested && ISO_DATE.test(requested) && requested <= today ? requested : currentWindowEnd(data.completeDays, today);
 
   return (
     <>

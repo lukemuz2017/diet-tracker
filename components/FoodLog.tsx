@@ -22,7 +22,7 @@ import { NUTRIENT_GROUPS, NUTRIENTS } from "@/lib/nutrients";
 import { useSavedData, type Entry, type SavedData } from "@/lib/storage";
 import { computeTargets } from "@/lib/targets";
 import { useToday } from "@/lib/useToday";
-import { WINDOW_DAYS, dayState, type DayState } from "@/lib/week";
+import { WINDOW_DAYS, currentWindowEnd, dayState, type DayState } from "@/lib/week";
 
 type Tab = "progress" | "foods";
 const TABS: { value: Tab; label: string }[] = [
@@ -46,8 +46,11 @@ export function FoodLog() {
   const baseId = useId();
   if (!data?.profile || !today) return <PageHeader title="This week" />;
 
-  const start = addDays(today, -(WINDOW_DAYS - 1));
-  const days = Array.from({ length: WINDOW_DAYS }, (_, i) => addDays(today, -i));
+  // The 7 days that count: ending yesterday until today is marked complete.
+  const end = currentWindowEnd(data.completeDays, today);
+  const start = addDays(end, -(WINDOW_DAYS - 1));
+  // Foods tab: today first, then back to the start of the window.
+  const days = Array.from({ length: WINDOW_DAYS + (end === today ? 0 : 1) }, (_, i) => addDays(today, -i));
   const firstFood = data.entries.length === 1;
 
   // Opened from a meal's "+ Add", that meal; otherwise a guess from the time of day.
@@ -65,7 +68,7 @@ export function FoodLog() {
 
   return (
     <div className="max-w-4xl">
-      <WeekSummary data={data} profile={data.profile} today={today} range={`${formatDay(start)} – ${formatDay(today)}`} />
+      <WeekSummary data={data} profile={data.profile} today={today} end={end} range={`${formatDay(start)} – ${formatDay(end)}`} />
 
       {/* The view toggle and Add food share one row. */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -137,7 +140,7 @@ export function FoodLog() {
         className="rounded-card focus-visible:outline-offset-4"
       >
         {tab === "progress" ? (
-          <WeekRibbons data={data} profile={data.profile} today={today} onOpenDay={setOpenDay} />
+          <WeekRibbons data={data} profile={data.profile} today={today} end={end} onOpenDay={setOpenDay} />
         ) : (
           <div className="flex flex-col gap-5">
             {days.map((day, index) => (
@@ -152,7 +155,7 @@ export function FoodLog() {
 
 /**
  * The day to add food to: a button showing the day that drops down a month
- * calendar, limited to today and the 6 days before.
+ * calendar, from the first day of the window to today.
  */
 function DayPicker({ date, today, earliest, onPick }: { date: string; today: string; earliest: string; onPick: (date: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -199,7 +202,7 @@ function DayPicker({ date, today, earliest, onPick }: { date: string; today: str
           />
         </div>
       )}
-      <span className="text-[13px] text-muted">You can fill in today or any of the 6 days before.</span>
+      <span className="text-[13px] text-muted">You can fill in any day from {formatDay(earliest)} to today.</span>
     </div>
   );
 }

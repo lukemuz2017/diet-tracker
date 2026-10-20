@@ -34,6 +34,15 @@ export interface WindowSummary {
   coverage: Record<NutrientKey, { days: number; inRange: number }>;
 }
 
+/**
+ * The day the current window ends on: today once it's marked complete,
+ * otherwise yesterday, so an unfinished today never shortens the week to 6
+ * days.
+ */
+export function currentWindowEnd(completeDays: string[], today: string): string {
+  return completeDays.includes(today) ? today : addDays(today, -1);
+}
+
 /** The 7 dates ending on `end`, oldest first. */
 export function windowDates(end: string): string[] {
   return Array.from({ length: WINDOW_DAYS }, (_, i) => addDays(end, i - (WINDOW_DAYS - 1)));

@@ -15,10 +15,10 @@ const TONE = { good: "border-leaf", low: "border-lemon", high: "border-carrot", 
 // verdict on the last 7 days in words, and three tiles: going well, could
 // improve, and a bigger-picture habit (lib/suggestions.ts). One card, to keep the
 // page short.
-export function WeekSummary({ data, profile, today, range }: { data: SavedData; profile: Profile; today: string; range: string }) {
+export function WeekSummary({ data, profile, today, end, range }: { data: SavedData; profile: Profile; today: string; end: string; range: string }) {
   const verdictId = useId();
   const targets = computeTargets(profile, today);
-  const window = summarizeWindow(data, today, targets);
+  const window = summarizeWindow(data, end, targets);
   const { verdict, headline, tiles } = summarize(window, targets, data.entries);
 
   return (
@@ -26,6 +26,7 @@ export function WeekSummary({ data, profile, today, range }: { data: SavedData; 
       <div>
         <h1 className="font-display text-[34px] font-extrabold leading-none tracking-tight">This week</h1>
         <p className="mt-1 text-sm text-muted">{range}</p>
+        {end !== today && <p className="text-xs text-muted">Today joins once you mark it complete.</p>}
         <p id={verdictId} className="mt-2.5 font-display text-lg font-extrabold leading-tight text-leaf">
           {headline}
         </p>

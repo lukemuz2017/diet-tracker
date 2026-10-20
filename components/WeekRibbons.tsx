@@ -33,16 +33,19 @@ export function WeekRibbons({
   data,
   profile,
   today,
+  end,
   onOpenDay,
 }: {
   data: SavedData;
   profile: Profile;
   today: string;
+  /** The window's last day: yesterday until today is marked complete. */
+  end: string;
   onOpenDay: (date: string) => void;
 }) {
   const [expanded, setExpanded] = useState<NutrientKey | null>(null);
   const targets = computeTargets(profile, today);
-  const summary = summarizeWindow(data, today, targets);
+  const summary = summarizeWindow(data, end, targets);
   const dayLabel = (date: string) => (date === today ? "Today" : formatDay(date).slice(0, 3));
   const dayName = (date: string) => (date === today ? "Today" : date === addDays(today, -1) ? "Yesterday" : formatDay(date));
 

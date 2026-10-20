@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Entry } from "./storage.ts";
 import type { Targets } from "./targets.ts";
-import { runningAverages, summarizeWindow, windowDates } from "./week.ts";
+import { currentWindowEnd, runningAverages, summarizeWindow, windowDates } from "./week.ts";
 
 const TODAY = "2026-10-18";
 const targets = {
@@ -86,4 +86,10 @@ test("the running average builds up from complete days and ends at the average",
   // Window Oct 12–18: Oct 13 is logged but not marked, so it doesn't move the line.
   assert.deepEqual(running, [1800, 1800, 2100, 2100, 2100, 2100, 2100]);
   assert.equal(running.at(-1), s.averages.calories);
+});
+
+test("the window ends yesterday until today is marked complete", () => {
+  assert.equal(currentWindowEnd([], TODAY), "2026-10-17");
+  assert.equal(currentWindowEnd(["2026-10-17"], TODAY), "2026-10-17");
+  assert.equal(currentWindowEnd([TODAY], TODAY), TODAY);
 });
