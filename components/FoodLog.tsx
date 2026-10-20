@@ -146,7 +146,7 @@ function TodayStrip({ data, today, onAdd, onOpen }: { data: SavedData; today: st
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
         <h2 className="font-display text-xl font-extrabold">Today</h2>
         <span className="text-sm text-muted">{formatDay(today)}</span>
-        <span className="text-[15px] font-bold">{foods > 0 ? `${formatValue(totals.calories ?? 0)} kcal` : "Nothing logged yet"}</span>
+        {foods > 0 && <span className="text-[15px] font-bold">{formatValue(totals.calories ?? 0)} kcal</span>}
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${chip.className}`}>{chip.text}</span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
