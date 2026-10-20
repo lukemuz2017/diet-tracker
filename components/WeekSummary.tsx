@@ -1,6 +1,5 @@
 "use client";
 
-import { useId } from "react";
 import { dietOf, type Profile } from "@/lib/profile";
 import type { SavedData } from "@/lib/storage";
 import { SUGGESTION_DAYS, summarize } from "@/lib/suggestions";
@@ -11,24 +10,20 @@ const KIND_LABEL = { good: "Going well", improve: "Could improve", big: "Bigger 
 /** Left edge: in range, under, over, or a general habit (kraft). */
 const TONE = { good: "border-leaf", low: "border-lemon", high: "border-carrot", big: "border-kraft" } as const;
 
-// The top of Dashboard, and the page's heading: the title and dates, a
-// verdict on the last 7 days in words, and three tiles: going well, could
+// The top of Dashboard, and the page's heading: the title and dates, and
+// three tiles: going well, could
 // improve, and a bigger-picture habit (lib/suggestions.ts). One card, to keep the
 // page short.
 export function WeekSummary({ data, profile, today, end, range }: { data: SavedData; profile: Profile; today: string; end: string; range: string }) {
-  const verdictId = useId();
   const targets = computeTargets(profile, today);
   const window = summarizeWindow(data, end, targets);
-  const { verdict, headline, tiles, daysToGo } = summarize(window, targets, data.entries, dietOf(profile));
+  const { verdict, tiles, daysToGo } = summarize(window, targets, data.entries, dietOf(profile));
 
   return (
-    <section aria-describedby={verdictId} className="mb-4 mt-1 grid items-center gap-x-6 gap-y-3 rounded-card bg-paper p-4 sm:mt-3 sm:p-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
+    <section className="mb-4 mt-1 grid items-center gap-x-6 gap-y-3 rounded-card bg-paper p-4 sm:mt-3 sm:p-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
       <div>
         <h1 className="font-display text-[34px] font-extrabold leading-none tracking-tight">Dashboard</h1>
         <p className="mt-1 text-sm text-muted">{range}</p>
-        <p id={verdictId} className="mt-2.5 font-display text-lg font-extrabold leading-tight text-leaf">
-          {headline}
-        </p>
       </div>
 
       {verdict === "waiting" ? (

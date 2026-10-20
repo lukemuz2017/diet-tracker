@@ -44,6 +44,12 @@ export function formatDay(iso: string): string {
   });
 }
 
+/** "Oct 18" */
+export function formatShortDay(iso: string): string {
+  const [y, m, day] = parts(iso);
+  return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
 /** "Sunday" */
 export function weekdayName(iso: string): string {
   const [y, m, d] = parts(iso);

@@ -14,7 +14,7 @@ import { Card, PageHeader } from "@/components/ui/Card";
 import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { changeServings, removeEntry, setDayComplete } from "@/lib/actions";
 import { multipleFor, quantityFor } from "@/lib/amounts";
-import { addDays, formatDay, weekdayName } from "@/lib/dates";
+import { addDays, formatDay, formatShortDay, weekdayName } from "@/lib/dates";
 import { amountFor } from "@/lib/foods";
 import { dayHighlights } from "@/lib/highlights";
 import { formatValue, totalsFor } from "@/lib/log";
@@ -90,7 +90,7 @@ export function FoodLog() {
       ) : (
         <>
           <DashboardStickers />
-          <WeekSummary data={data} profile={data.profile} today={today} end={end} range={`${formatDay(start)} – ${formatDay(end)}`} />
+          <WeekSummary data={data} profile={data.profile} today={today} end={end} range={`${formatShortDay(start)} – ${formatShortDay(end)}`} />
           <TodayStrip data={data} today={today} addLabel={addLabel} onAdd={() => openAdd(today)} onOpen={() => setOpenDay(today)} />
         </>
       )}
