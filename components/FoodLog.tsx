@@ -40,6 +40,8 @@ export function FoodLog() {
   const end = currentWindowEnd(data.completeDays, today);
   const start = addDays(end, -(WINDOW_DAYS - 1));
   const firstFood = data.entries.length === 1;
+  // Nothing logged yet: one clear prompt instead of an empty grid.
+  const nothingYet = data.entries.length === 0;
   const targets = computeTargets(data.profile, today);
 
   // Opened from a meal's "+ Add", that meal; otherwise a guess from the time of day.
@@ -50,10 +52,29 @@ export function FoodLog() {
 
   return (
     <div className="relative max-w-4xl">
-      <DashboardStickers summary={summarizeWindow(data, end, targets)} targets={targets} />
-      <WeekSummary data={data} profile={data.profile} today={today} end={end} range={`${formatDay(start)} – ${formatDay(end)}`} />
-
-      <TodayStrip data={data} today={today} onAdd={() => openAdd(today)} onOpen={() => setOpenDay(today)} />
+      {nothingYet ? (
+        <section aria-labelledby="dashboard-first" className="mb-4 mt-1 flex flex-col items-start gap-4 rounded-card border-l-[6px] border-leaf bg-paper p-6 sm:mt-3 sm:p-8">
+          <h1 className="font-display text-[34px] font-extrabold leading-none tracking-tight">Dashboard</h1>
+          <p id="dashboard-first" className="max-w-md font-display text-2xl font-extrabold leading-snug text-leaf sm:text-3xl">
+            Log what you ate today to start your week.
+          </p>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => openAdd(today)}
+            className="inline-flex min-h-14 items-center gap-2 rounded-full bg-leaf px-8 font-display text-xl font-extrabold text-white hover:bg-leaf-dark"
+          >
+            <PlusIcon width={22} height={22} strokeWidth={2.25} />
+            Add food
+          </button>
+        </section>
+      ) : (
+        <>
+          <DashboardStickers summary={summarizeWindow(data, end, targets)} targets={targets} />
+          <WeekSummary data={data} profile={data.profile} today={today} end={end} range={`${formatDay(start)} – ${formatDay(end)}`} />
+          <TodayStrip data={data} today={today} onAdd={() => openAdd(today)} onOpen={() => setOpenDay(today)} />
+        </>
+      )}
 
       <Dialog open={addDate !== null} onClose={() => setAddDate(null)} title="Add food">
         {addDate && (
@@ -78,7 +99,7 @@ export function FoodLog() {
         </p>
       )}
 
-      <WeekRibbons data={data} profile={data.profile} today={today} end={end} onOpenDay={setOpenDay} />
+      {!nothingYet && <WeekRibbons data={data} profile={data.profile} today={today} end={end} onOpenDay={setOpenDay} />}
     </div>
   );
 }
