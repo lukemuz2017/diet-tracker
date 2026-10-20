@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useId, useState, type FormEvent } from "react";
-import { FoodRow } from "@/components/FoodRow";
+import { AmountSelect, FoodRow } from "@/components/FoodRow";
 import { FoodSearch, type SearchOption } from "@/components/FoodSearch";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
 import { ChoiceField, FieldError, TextField } from "@/components/ui/Field";
 import { addFood, deleteRecipe, saveRecipe } from "@/lib/actions";
-import { formatAmount, quantityFor } from "@/lib/amounts";
+import { formatAmount, multipleFor, quantityFor } from "@/lib/amounts";
 import { FOODS, RECIPE_SERVINGS, amountFor } from "@/lib/foods";
 import { mealAt } from "@/lib/meals";
 import { NUTRIENT_KEYS, emptyCustomFood, formatValue, scaleNutrients, validateCustomFood, type CustomFoodValues } from "@/lib/log";
@@ -234,7 +234,6 @@ function BuildRecipe({
   const [name, setName] = useState("");
   const [servings, setServings] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [picked, setPicked] = useState<string | null>(null);
   const [hint, setHint] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -248,7 +247,6 @@ function BuildRecipe({
     const spec = amountFor(choice.foodId);
     return { key: choice.key, name: choice.name, detail: `${formatAmount(spec, spec.base)} · ${formatValue(choice.perBase.calories ?? 0)} kcal` };
   });
-  const pickedChoice = choices.find((choice) => choice.key === picked);
 
   const servingsProblem = servingsError(servings);
   const nameProblem = name.trim() ? undefined : "Enter a recipe name, like Chicken chili.";
@@ -291,7 +289,14 @@ function BuildRecipe({
         <FoodSearch
           options={options}
           onPick={(key) => {
-            setPicked(key);
+            // Picking adds it at the usual amount; change the amount in the list.
+            const choice = choices.find((item) => item.key === key);
+            if (choice) {
+              setIngredients((list) => [
+                ...list,
+                { name: choice.name, foodId: choice.foodId, multiple: 1, nutrients: scaleNutrients(choice.perBase, 1) },
+              ]);
+            }
             setHint("");
           }}
           onAddOwn={(typed) =>
@@ -299,29 +304,6 @@ function BuildRecipe({
           }
         />
         {hint && <p className="text-[13px] text-muted">{hint}</p>}
-        {pickedChoice && (
-          <ul className="rounded-field border-[1.5px] border-leaf px-3">
-            <FoodRow
-              key={pickedChoice.key}
-              name={pickedChoice.name}
-              spec={amountFor(pickedChoice.foodId)}
-              perBase={pickedChoice.perBase}
-              actionLabel="Add to recipe"
-              onAdd={(multiple) => {
-                setIngredients((list) => [
-                  ...list,
-                  {
-                    name: pickedChoice.name,
-                    foodId: pickedChoice.foodId,
-                    multiple,
-                    nutrients: scaleNutrients(pickedChoice.perBase, multiple),
-                  },
-                ]);
-                setPicked(null);
-              }}
-            />
-          </ul>
-        )}
       </div>
 
       <div id="build-ingredients" tabIndex={-1} className="flex flex-col gap-2">
@@ -334,10 +316,24 @@ function BuildRecipe({
               const spec = amountFor(item.foodId);
               return (
                 <li key={`${item.name}-${index}`} className="flex items-center justify-between gap-3 py-2">
-                  <span>
-                    {formatAmount(spec, quantityFor(spec, item.multiple))} {item.name.toLowerCase()}
-                    <span className="text-muted"> · {formatValue(item.nutrients.calories ?? 0)} kcal</span>
+                  <span className="min-w-0">
+                    <b className="block leading-snug">{item.name}</b>
+                    <span className="text-sm text-muted">{formatValue(item.nutrients.calories ?? 0)} kcal</span>
                   </span>
+                  <span className="flex items-center gap-2">
+                    <AmountSelect
+                      id={`ingredient-${index}`}
+                      label={`Amount of ${item.name}`}
+                      spec={spec}
+                      quantity={quantityFor(spec, item.multiple)}
+                      onChange={(quantity) => {
+                        const multiple = multipleFor(spec, quantity);
+                        const base = scaleNutrients(item.nutrients, 1 / item.multiple);
+                        setIngredients((list) =>
+                          list.map((entry, i) => (i === index ? { ...entry, multiple, nutrients: scaleNutrients(base, multiple) } : entry)),
+                        );
+                      }}
+                    />
                   <Button
                     variant="quiet"
                     aria-label={`Remove ${item.name}`}
@@ -345,6 +341,7 @@ function BuildRecipe({
                   >
                     Remove
                   </Button>
+                  </span>
                 </li>
               );
             })}
