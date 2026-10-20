@@ -68,6 +68,8 @@ export function AddFoodPanel({
   const [mode, setMode] = useState<Mode>("foods");
   const [staged, setStaged] = useState<Staged[]>([]);
   const counter = useRef(0);
+  // On a phone, focusing the search at once opens the keyboard and shifts the pop-up.
+  const [focusSearch] = useState(() => window.matchMedia("(pointer: fine)").matches);
   const [extra, setExtra] = useState<"browse" | "own" | null>(null);
   const [ownName, setOwnName] = useState("");
   const isToday = date === today;
@@ -171,7 +173,7 @@ export function AddFoodPanel({
 
         <FoodSearch
             key={mode}
-            autoFocus
+            autoFocus={focusSearch}
             label={mode === "foods" ? "Search foods" : "Search your meals and recipes"}
             placeholder={mode === "foods" ? "Try “eggs” or “rice”" : mealChoices.length ? "Type a name, or pick one below" : "No saved meals yet"}
             options={options}
@@ -230,12 +232,12 @@ export function AddFoodPanel({
           </section>
         )}
 
-        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold">
+        <div className="flex flex-wrap gap-x-5 text-sm font-bold">
           <button
             type="button"
             aria-expanded={extra === "browse"}
             onClick={() => setExtra(extra === "browse" ? null : "browse")}
-            className="text-leaf underline underline-offset-[3px]"
+            className="inline-flex min-h-11 items-center text-leaf underline underline-offset-[3px]"
           >
             Browse all foods
           </button>
@@ -243,11 +245,11 @@ export function AddFoodPanel({
             type="button"
             aria-expanded={extra === "own"}
             onClick={() => setExtra(extra === "own" ? null : "own")}
-            className="text-leaf underline underline-offset-[3px]"
+            className="inline-flex min-h-11 items-center text-leaf underline underline-offset-[3px]"
           >
             Add your own food
           </button>
-          <Link href="/recipes" className="text-leaf underline underline-offset-[3px]">
+          <Link href="/recipes" className="inline-flex min-h-11 items-center text-leaf underline underline-offset-[3px]">
             New recipe
           </Link>
         </div>

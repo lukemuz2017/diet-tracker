@@ -20,6 +20,9 @@ export function Dialog({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  // A backdrop tap closes only if it also started on the backdrop, so a tap that
+  // slides onto it (the phone keyboard shifting the pop-up) doesn't close it.
+  const pressedBackdrop = useRef(false);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -36,16 +39,20 @@ export function Dialog({
   const shape =
     side === "right"
       ? "m-0 ml-auto h-dvh max-h-dvh w-full max-w-lg rounded-l-card"
-      : "m-auto max-h-[88dvh] w-[min(44rem,calc(100vw-2rem))] rounded-card";
+      : "mx-auto mb-auto mt-3 max-h-[92dvh] w-[min(44rem,calc(100vw-1.5rem))] rounded-card sm:my-auto sm:max-h-[88dvh] sm:w-[min(44rem,calc(100vw-2rem))]";
 
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
       onClose={onClose}
+      onPointerDown={(event) => {
+        pressedBackdrop.current = event.target === ref.current;
+      }}
       // A click on the backdrop lands on the <dialog> itself, not its content.
       onClick={(event) => {
-        if (event.target === ref.current) onClose();
+        if (event.target === ref.current && pressedBackdrop.current) onClose();
+        pressedBackdrop.current = false;
       }}
       className={`${shape} bg-paper p-0 text-soil shadow-2xl backdrop:bg-soil/35 backdrop:backdrop-blur-sm`}
     >
